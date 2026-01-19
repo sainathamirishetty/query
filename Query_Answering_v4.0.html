@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Query Answering</title>
+    <link rel="icon" href="/static/logo.png" type="image/png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-radius: 20px 0 0 20px;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .sidebar h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .new-session-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .new-session-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .session-list {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        .session-item {
+            position: relative;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .session-item:hover {
+            background: #e3f2fd;
+            border-left-color: #667eea;
+        }
+        .session-item.active {
+            background: #e3f2fd;
+            border-left-color: #667eea;
+        }
+        .session-item-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .session-item-meta {
+            font-size: 0.85em;
+            color: #666;
+        }
+        .session-item-count {
+            font-size: 0.8em;
+            color: #667eea;
+            margin-top: 4px;
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            background: white;
+            border-radius: 0 20px 20px 0;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .back-btn {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+        .content {
+            padding: 30px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            gap: 20px;
+        }
+
+        /* Left Panel - Selection */
+        .selection-panel {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        /* Right Panel - Chat */
+        .chat-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        /* Session Selection */
+        .discussion-sessions-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px;
+            background: white;
+        }
+        .discussion-session-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .discussion-session-checkbox:hover {
+            background: #e3f2fd;
+        }
+        .discussion-session-checkbox input[type="checkbox"] {
+            margin-right: 10px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+        .discussion-session-checkbox label {
+            cursor: pointer;
+            flex: 1;
+            font-weight: 500;
+        }
+        .discussion-session-checkbox .session-date {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* Document Upload */
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover {
+            background: #f0f4ff;
+            border-color: #5568d3;
+        }
+        .upload-area input[type="file"] {
+            display: none;
+        }
+        .uploaded-files {
+            margin-top: 15px;
+        }
+        .uploaded-file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .uploaded-file-item .file-name {
+            font-weight: 500;
+            color: #333;
+        }
+        .uploaded-file-item .file-size {
+            font-size: 0.85em;
+            color: #666;
+        }
+        .remove-file-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+
+        /* Chat Area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+        .chat-message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-message.user {
+            text-align: right;
+        }
+        .chat-message .message-bubble {
+            display: inline-block;
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 15px;
+            text-align: left;
+        }
+        .chat-message.user .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .chat-message.assistant .message-bubble {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+        }
+        .message-timestamp {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 5px;
+        }
+        .sources-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .sources-section h4 {
+            color: #667eea;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .source-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 0.85em;
+        }
+        .source-item .source-name {
+            font-weight: 600;
+            color: #667eea;
+        }
+        .source-item .source-snippet {
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        /* Chat Input */
+        .chat-input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .chat-input-container textarea {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        .chat-input-container textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .send-btn {
+            padding: 12px 25px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .send-btn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #28a745; color: white; }
+
+        .banner {
+            background: #ffc107;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .banner.active {
+            background: #4caf50;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        .empty-state h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Session Sidebar -->
+    <div class="sidebar">
+        <h2>📂 Query Sessions</h2>
+        <button class="new-session-btn" onclick="createNewQuerySession()">+ New Query Session</button>
+        <div class="session-list" id="querySessionList">
+            <p style="color: #999; text-align: center;">Loading sessions...</p>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">← Back</button>
+            <h1>💬 Query Answering</h1>
+        </div>
+
+        <div class="content">
+            <!-- Left Panel: Selection -->
+            <div class="selection-panel">
+                <!-- Session Info -->
+                <div class="section">
+                    <div class="banner" id="sessionBanner">
+                        No session selected - Create new session to start
+                    </div>
+                </div>
+
+                <!-- Select Discussion Sessions -->
+                <div class="section">
+                    <h2>📋 Select Discussion Sessions</h2>
+                    <div class="discussion-sessions-list" id="discussionSessionsList">
+                        <p style="color: #999; text-align: center;">Loading sessions...</p>
+                    </div>
+                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="saveSessionSelections()">
+                        Save Selections
+                    </button>
+                </div>
+
+                <!-- Upload Documents -->
+                <div class="section">
+                    <h2>📄 Upload Documents</h2>
+                    <div class="upload-area" onclick="document.getElementById('fileUpload').click()">
+                        <p>📁 Click to upload PDF, DOCX, or TXT files</p>
+                        <p style="font-size: 0.85em; color: #666; margin-top: 5px;">
+                            Add documents to enhance your knowledge base
+                        </p>
+                        <input type="file" id="fileUpload" accept=".pdf,.docx,.txt" onchange="handleFileUpload(event)">
+                    </div>
+                    <div class="uploaded-files" id="uploadedFilesList"></div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Chat -->
+            <div class="chat-panel">
+                <div class="section" style="flex: 1; display: flex; flex-direction: column; padding: 0;">
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="empty-state">
+                                <h3>👋 Welcome to Query Answering</h3>
+                                <p>Select discussion sessions or upload documents, then ask your questions!</p>
+                            </div>
+                        </div>
+                        <div class="chat-input-area">
+                            <div class="chat-input-container">
+                                <textarea
+                                    id="questionInput"
+                                    rows="2"
+                                    placeholder="Ask a question about your selected sessions and documents..."
+                                    onkeypress="handleKeyPress(event)"
+                                ></textarea>
+                                <button class="send-btn" id="sendBtn" onclick="askQuestion()">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuerySessionId = null;
+        let userQuerySessions = [];
+        let userDiscussionSessions = [];
+        let selectedSessionIds = [];
+        let uploadedDocuments = [];
+        const serverUrl = '';
+
+        function goBack() {
+            window.location.href = '/';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadUserQuerySessions();
+            await loadUserDiscussionSessions();
+        });
+
+        // ============ Query Session Management ============
+
+        async function loadUserQuerySessions() {
+            try {
+                const response = await fetch('/user_query_sessions');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    userQuerySessions = data.query_sessions;
+                    renderQuerySessionList();
+
+                    if (userQuerySessions.length > 0) {
+                        loadQuerySession(userQuerySessions[0].query_session_id);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading query sessions:', error);
+            }
+        }
+
+        function renderQuerySessionList() {
+            const sessionList = document.getElementById('querySessionList');
+
+            if (userQuerySessions.length === 0) {
+                sessionList.innerHTML = '<p style="color: #999; text-align: center;">No sessions yet</p>';
+                return;
+            }
+
+            sessionList.innerHTML = '';
+            userQuerySessions.forEach(session => {
+                const sessionItem = document.createElement('div');
+                sessionItem.className = 'session-item';
+                if (session.query_session_id === currentQuerySessionId) {
+                    sessionItem.classList.add('active');
+                }
+
+                const name = session.session_name || 'Unnamed Session';
+                const date = new Date(session.created_at).toLocaleDateString();
+                const qaCount = session.qa_count || 0;
+
+                sessionItem.innerHTML = `
+                    <div class="session-item-name">${name}</div>
+                    <div class="session-item-meta">${date}</div>
+                    <div class="session-item-count">${qaCount} question(s)</div>
+                `;
+
+                sessionItem.onclick = () => loadQuerySession(session.query_session_id);
+                sessionList.appendChild(sessionItem);
+            });
+        }
+
+        async function createNewQuerySession() {
+            try {
+                const sessionName = prompt('Enter session name (optional):');
+
+                const response = await fetch('/create_query_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_name: sessionName || undefined
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    await loadUserQuerySessions();
+                    loadQuerySession(data.query_session_id);
+                } else {
+                    alert('Failed to create session');
+                }
+            } catch (error) {
+                console.error('Error creating query session:', error);
+                alert('Error creating session');
+            }
+        }
+
+        async function loadQuerySession(querySessionId) {
+            try {
+                const response = await fetch(`/query_session/${querySessionId}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const session = data.query_session;
+                    currentQuerySessionId = querySessionId;
+                    selectedSessionIds = session.selected_sessions || [];
+                    uploadedDocuments = session.uploaded_documents || [];
+
+                    // Update UI
+                    updateSessionBanner(session.session_name || 'Unnamed Session');
+                    updateDiscussionSessionsCheckboxes();
+                    updateUploadedFilesList();
+                    loadChatHistory(session.qa_history || []);
+
+                    renderQuerySessionList();
+                }
+            } catch (error) {
+                console.error('Error loading query session:', error);
+            }
+        }
+
+        function updateSessionBanner(sessionName) {
+            const banner = document.getElementById('sessionBanner');
+            banner.textContent = `Active Session: ${sessionName}`;
+            banner.className = 'banner active';
+        }
+
+        // ============ Discussion Sessions Selection ============
+
+        async function loadUserDiscussionSessions() {
+            try {
+                const response = await fetch('/user_discussion_sessions');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    userDiscussionSessions = data.sessions;
+                    renderDiscussionSessionsList();
+                }
+            } catch (error) {
+                console.error('Error loading discussion sessions:', error);
+            }
+        }
+
+        function renderDiscussionSessionsList() {
+            const container = document.getElementById('discussionSessionsList');
+
+            if (userDiscussionSessions.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">No discussion sessions available</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            userDiscussionSessions.forEach(session => {
+                const div = document.createElement('div');
+                div.className = 'discussion-session-checkbox';
+
+                const isChecked = selectedSessionIds.includes(session.session_id);
+
+                div.innerHTML = `
+                    <input
+                        type="checkbox"
+                        id="sess_${session.session_id}"
+                        value="${session.session_id}"
+                        ${isChecked ? 'checked' : ''}
+                        onchange="toggleSessionSelection('${session.session_id}')"
+                    >
+                    <label for="sess_${session.session_id}">
+                        <div>${session.session_name || 'Unnamed Session'}</div>
+                        <div class="session-date">${session.meeting_date || 'No date'} - ${session.result_count || 0} results</div>
+                    </label>
+                `;
+
+                container.appendChild(div);
+            });
+        }
+
+        function toggleSessionSelection(sessionId) {
+            const index = selectedSessionIds.indexOf(sessionId);
+            if (index > -1) {
+                selectedSessionIds.splice(index, 1);
+            } else {
+                selectedSessionIds.push(sessionId);
+            }
+        }
+
+        function updateDiscussionSessionsCheckboxes() {
+            userDiscussionSessions.forEach(session => {
+                const checkbox = document.getElementById(`sess_${session.session_id}`);
+                if (checkbox) {
+                    checkbox.checked = selectedSessionIds.includes(session.session_id);
+                }
+            });
+        }
+
+        async function saveSessionSelections() {
+            if (!currentQuerySessionId) {
+                alert('Please create a query session first');
+                return;
+            }
+
+            try {
+                const response = await fetch('/update_query_session_selections', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query_session_id: currentQuerySessionId,
+                        selected_sessions: selectedSessionIds
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    alert('✓ Session selections saved!');
+                } else {
+                    alert('Failed to save selections');
+                }
+            } catch (error) {
+                console.error('Error saving selections:', error);
+                alert('Error saving selections');
+            }
+        }
+
+        // ============ Document Upload ============
+
+        async function handleFileUpload(event) {
+            if (!currentQuerySessionId) {
+                alert('Please create a query session first');
+                event.target.value = '';
+                return;
+            }
+
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('query_session_id', currentQuerySessionId);
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/upload_document', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    uploadedDocuments.push({
+                        document_id: data.document_id,
+                        filename: data.filename
+                    });
+                    updateUploadedFilesList();
+                    alert('✓ Document uploaded successfully!');
+                } else {
+                    alert('Failed to upload document: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error uploading document:', error);
+                alert('Error uploading document');
+            }
+
+            event.target.value = '';
+        }
+
+        function updateUploadedFilesList() {
+            const container = document.getElementById('uploadedFilesList');
+
+            if (uploadedDocuments.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            container.innerHTML = '<h4 style="color: #667eea; margin-bottom: 10px;">Uploaded Files:</h4>';
+
+            uploadedDocuments.forEach(doc => {
+                const div = document.createElement('div');
+                div.className = 'uploaded-file-item';
+                div.innerHTML = `
+                    <div>
+                        <div class="file-name">📄 ${doc.filename}</div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // ============ Chat / Q&A ============
+
+        function loadChatHistory(qaHistory) {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '';
+
+            if (qaHistory.length === 0) {
+                chatMessages.innerHTML = `
+                    <div class="empty-state">
+                        <h3>👋 Start Asking Questions</h3>
+                        <p>Your conversation will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            qaHistory.forEach(qa => {
+                displayUserMessage(qa.question);
+                displayAssistantMessage(qa.answer, qa.sources);
+            });
+        }
+
+        function displayUserMessage(question) {
+            const chatMessages = document.getElementById('chatMessages');
+
+            // Remove empty state if exists
+            const emptyState = chatMessages.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message user';
+            messageDiv.innerHTML = `
+                <div class="message-bubble">
+                    ${escapeHtml(question)}
+                </div>
+                <div class="message-timestamp">${new Date().toLocaleTimeString()}</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function displayAssistantMessage(answer, sources) {
+            const chatMessages = document.getElementById('chatMessages');
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message assistant';
+
+            let sourcesHtml = '';
+            if (sources && sources.length > 0) {
+                sourcesHtml = `
+                    <div class="sources-section">
+                        <h4>📚 Sources:</h4>
+                        ${sources.map(source => `
+                            <div class="source-item">
+                                <div class="source-name">${source.source_name} (${source.source_type})</div>
+                                <div class="source-snippet">"${source.text_snippet}"</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            messageDiv.innerHTML = `
+                <div class="message-bubble">
+                    ${formatAnswer(answer)}
+                    ${sourcesHtml}
+                </div>
+                <div class="message-timestamp">${new Date().toLocaleTimeString()}</div>
+            `;
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function askQuestion() {
+            if (!currentQuerySessionId) {
+                alert('Please create a query session first');
+                return;
+            }
+
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+
+            if (!question) {
+                alert('Please enter a question');
+                return;
+            }
+
+            if (selectedSessionIds.length === 0 && uploadedDocuments.length === 0) {
+                alert('Please select at least one discussion session or upload a document first');
+                return;
+            }
+
+            // Display user message
+            displayUserMessage(question);
+            questionInput.value = '';
+
+            // Disable send button
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Thinking...';
+
+            try {
+                const response = await fetch('/ask_question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query_session_id: currentQuerySessionId,
+                        question: question,
+                        top_k: 5
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    displayAssistantMessage(data.answer, data.sources);
+                } else {
+                    displayAssistantMessage('Sorry, I encountered an error processing your question.', []);
+                }
+            } catch (error) {
+                console.error('Error asking question:', error);
+                displayAssistantMessage('Sorry, I encountered an error. Please try again.', []);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.textContent = 'Send';
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                askQuestion();
+            }
+        }
+
+        function formatAnswer(text) {
+            // Simple formatting: convert newlines to <br> and preserve structure
+            return text
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>')
+                .replace(/^(.+)$/, '<p>$1</p>')
+                .replace(/➤/g, '<br>➤');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
