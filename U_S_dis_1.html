@@ -1,0 +1,2432 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title> Discussion Summary </title>
+    <link rel="icon" href="/static/logo.png" type="image/png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Session Sidebar */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-radius: 20px 0 0 20px;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .sidebar h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .new-session-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .new-session-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .session-list {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        .session-item {
+            position: relative;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .session-item:hover {
+            background: #e3f2fd;
+            border-left-color: #667eea;
+        }
+        .session-item.active {
+            background: #e3f2fd;
+            border-left-color: #667eea;
+        }
+        .session-item-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .session-item-meta {
+            font-size: 0.85em;
+            color: #666;
+        }
+        .session-item-count {
+            font-size: 0.8em;
+            color: #667eea;
+            margin-top: 4px;
+        }
+        .session-item-count {
+            font-size: 0.8em;
+            color: #667eea;
+            margin-top: 4px;
+        }
+
+        /* ADD THESE NEW STYLES HERE */
+        .session-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .session-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .session-options-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px 8px;
+            color: #666;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .session-options-btn:hover {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .session-menu {
+            position: absolute;
+            right: 10px;
+            top: 40px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 140px;
+            overflow: hidden;
+        }
+
+        .session-menu-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .session-menu-item:hover {
+            background: #f5f5f5;
+        }
+
+        .session-menu-item:not(:last-child) {
+            border-bottom: 1px solid #eee;
+        }
+
+        .session-menu-item.delete {
+            color: #dc3545;
+        }
+
+        .session-menu-item.delete:hover {
+            background: #fff5f5;
+        }
+        /* END OF NEW STYLES */
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            background: white;
+            border-radius: 0 20px 20px 0;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .back-btn {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+        .content { padding: 30px; overflow-y: auto; max-height: calc(100vh - 160px); }
+        .section {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .form-group { margin-bottom: 15px; }
+        .date-time {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+        .date-time > label {
+            display: inline-block;
+            margin-right: 6px;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+        .date-time > input[type="date"],
+        .date-time > input[type="time"] {
+            width: 120px;
+            padding: 8px 10px;
+        }
+        .date-time > input[type="text"] {
+            flex: 1;
+            min-width: 250px;
+            padding: 8px 10px;
+        }
+        @media (max-width: 420px) {
+            .date-time {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .date-time > input[type="date"],
+            .date-time > input[type="time"] {
+                width: 100%;
+            }
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        .radio-group input[type="radio"] {
+            width: auto;
+            cursor: pointer;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .status-box {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            height: 150px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .status-box p { margin: 3px 0; }
+        .result-item {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .result-header h3 {
+            color: #667eea;
+            margin: 0;
+            font-size: 1.4em;
+        }
+        .result-content {
+            line-height: 1.8;
+            color: #333;
+            font-size: 15px;
+        }
+        .result-content h4 {
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            font-size: 1.2em;
+            font-weight: 600;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .result-content p {
+            margin-bottom: 15px;
+            text-align: justify;
+            text-justify: inter-word;
+        }
+        .result-content ul, .result-content ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+            margin-top: 10px;
+        }
+        .result-content li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        .result-content .action-item {
+            margin-bottom: 12px;
+            line-height: 1.6;
+            padding-left: 0;
+        }
+        .result-content .action-item::before {
+            content: '➤ ';
+            color: #667eea;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #ffc107;
+        }
+        .recording-indicator.active { display: flex; }
+        .pulse {
+            width: 12px;
+            height: 12px;
+            background: #dc3545;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        .timer {
+            font-weight: 600;
+            color: #dc3545;
+            font-size: 1.1em;
+        }
+        .chunk-timer {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 0.9em;
+            margin-left: auto;
+        }
+        .button-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .mode-info {
+            background: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2196f3;
+            font-size: 13px;
+            color: #1565c0;
+        }
+        .current-mode-display {
+            background: #4caf50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+        }
+        .session-info-banner {
+            background: #4caf50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+        /* Session Type Toggle - ADD THIS */
+.session-type-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.toggle-btn {
+    flex: 1;
+    padding: 10px;
+    background: #f0f0f0;
+    color: #666;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.toggle-btn:hover {
+    background: #e0e0e0;
+}
+
+.toggle-btn.active {
+    background: #667eea;
+    color: white;
+}
+
+/* Projects List Styles - ADD THIS */
+.project-item {
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-left: 4px solid transparent;
+}
+
+.project-item:hover {
+    background: #e3f2fd;
+    border-left-color: #667eea;
+}
+
+.project-item-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.project-item-desc {
+    font-size: 0.85em;
+    color: #666;
+}
+
+.back-to-projects-btn {
+    width: 100%;
+    padding: 10px;
+    background: #f0f0f0;
+    color: #667eea;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-bottom: 15px;
+    transition: all 0.3s;
+}
+
+.back-to-projects-btn:hover {
+    background: #e0e0e0;
+}
+
+/* Shared session badges - ADD THIS */
+.session-item-shared-badge {
+    display: inline-block;
+    background: #4caf50;
+    color: white;
+    font-size: 0.7em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+}
+
+.session-item-creator {
+    font-size: 0.75em;
+    color: #888;
+    margin-top: 2px;
+}
+    </style>
+</head>
+<body>
+    <!-- Session Sidebar -->
+    <div class="sidebar">
+        <h2>📂 Sessions</h2>
+
+        <!-- Session Type Toggle -->
+        <div class="session-type-toggle">
+            <button class="toggle-btn active" id="personalBtn" onclick="showPersonalSessions()">
+                Personal
+            </button>
+            <button class="toggle-btn" id="projectsBtn" onclick="showProjectsView()">
+                Projects
+            </button>
+        </div>
+
+        <!-- Personal Sessions View -->
+        <div id="personalView" style="display: block;">
+            <button class="new-session-btn" onclick="createNewSession(false)">+ New Session</button>
+            <div class="session-list" id="sessionList">
+                <p style="color: #999; text-align: center;">Loading sessions...</p>
+            </div>
+        </div>
+
+        <!-- Projects View (initially hidden) -->
+        <div id="projectsView" style="display: none;">
+            <button class="back-to-projects-btn" id="backToProjectsBtn" style="display: none;" onclick="showProjectsList()">
+                ← Back to Projects
+            </button>
+
+            <!-- Projects List -->
+            <div id="projectsList"></div>
+
+            <!-- Project Sessions List (hidden initially) -->
+            <div id="projectSessionsContainer" style="display: none;">
+                <button class="new-session-btn" onclick="createNewSession(true)">+ New Shared Session</button>
+                <div class="session-list" id="projectSessionsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">← Back</button>
+            <h1>📝 Discussion Summary </h1>
+        </div>
+
+        <div class="content">
+            <!-- Session Info Banner -->
+            <div class="session-info-banner" id="sessionBanner" style="display:none;">
+                No session selected - Click "+ New Session" to start
+            </div>
+
+            <!-- Meeting Info -->
+            <div class="section">
+                <h2>📋 Meeting Information</h2>
+                <div class="form-group date-time">
+                    <label for="date">Date:</label>
+                    <input type="date" id="date">
+
+                    <label for="time">Time:</label>
+                    <input type="time" id="time">
+
+                    <label for="venue">Venue:</label>
+                    <input type="text" id="venue" placeholder="Enter meeting venue">
+                </div>
+                <div class="form-group">
+                    <label>Agenda:</label>
+                    <textarea id="agenda" rows="3" placeholder=""></textarea>
+                </div>
+            </div>
+
+            <!-- Processing Mode -->
+            <div class="section">
+                <h2>⚙️ Processing Mode</h2>
+
+                <div class="current-mode-display" id="currentModeDisplay" style="display:none;">
+                    Current Active Mode: Not Started
+                </div>
+                <div class="form-group">
+                    <label>Select Mode:</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="mode" value="Summary" id="modeSummary" checked>
+                            Summary
+                        </label>
+                        <label>
+                            <input type="radio" name="mode" value="Action Points" id="modeActionPoints">
+                            Action Points
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" id="summaryLengthGroup">
+                    <label>Summary Length:</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="summaryLength" value="Short" id="lengthShort" checked>
+                            Short
+                        </label>
+                        <label>
+                            <input type="radio" name="summaryLength" value="Medium" id="lengthMedium">
+                            Medium
+                        </label>
+                        <label>
+                            <input type="radio" name="summaryLength" value="Long" id="lengthLong">
+                            Long
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recording Controls -->
+            <div class="section">
+                <h2>🎤 Recording Controls</h2>
+                <div class="recording-indicator" id="recIndicator">
+                    <div class="pulse"></div>
+                    <span>Recording in progress...</span>
+                    <span class="timer" id="timer">00:00:00</span>
+                    <span class="chunk-timer" id="chunkTimer"></span>
+                </div>
+
+                <div class="button-row">
+                    <button class="btn-primary" id="startBtn" onclick="startRec()">Start Meeting</button>
+                    <button class="btn-warning" id="pauseBtn" onclick="pauseRec()" disabled>Pause Meeting</button>
+                    <button class="btn-danger" id="stopBtn" onclick="endMeeting()" disabled>End Meeting</button>
+                </div>
+
+                <div class="button-row">
+                    <button class="btn-info" onclick="uploadFile()">Upload Audio File</button>
+                    <button class="btn-primary" onclick="genGlobalSummary()">Generate Global Summary</button>
+                    <button class="btn-success" onclick="saveResults()">Save Results (.doc)</button>
+                </div>
+
+                <input type="file" id="fileInput" accept=".wav,.webm,.mp3,.m4a,.ogg" style="display:none" onchange="handleFile(event)">
+            </div>
+
+            <!-- Status -->
+            <div class="section" style="display:none;">
+                <h2>📊 Status</h2>
+                <div class="status-box" id="status"></div>
+            </div>
+
+            <!-- Results -->
+            <div class="section" id="resultsSection" style="display:none;">
+                <h2>📄 Results</h2>
+                <div id="results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let isPaused = false;
+        let startTime = null;
+        let timerInterval = null;
+        let chunkTimerInterval = null;
+        let pausedTime = 0;
+        let pauseStartTime = null;
+        let serverUrl = '';
+        let allResults = [];
+
+        // Session management
+        let currentSessionId = null;
+        let resultOrderCounter = 0;
+        let userSessions = [];
+
+        // Track the last mode type (Summary or Action Points) to detect mode switches
+        let lastModeType = null;
+
+        let currentMimeType = 'audio/webm';
+        let lastChunkTime = null;
+        let autoChunkInterval = null;
+        let audioContext = null;
+        let scriptProcessor = null;
+        let audioInput = null;
+        let bufferData = [];
+        let chunkCounter = 0;
+        let meetingStartTime = null;
+        let mediaStreamRef = null;
+        let isProcessingModeSwitch = false;
+
+        // NEW: State management for projects
+        let currentView = 'personal'; // 'personal' or 'projects'
+        let currentProjectId = null;
+        let allProjects = [];
+        let currentProjectSessions = [];
+
+        function goBack() {
+            window.location.href = '/';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const today = new Date();
+            document.getElementById('date').valueAsDate = today;
+            document.getElementById('time').value = today.toTimeString().slice(0, 5);
+
+            // Listen to mode changes
+            document.querySelectorAll('input[name="mode"]').forEach(radio => {
+                radio.addEventListener('change', handleModeChange);
+            });
+
+            // Listen to metadata changes
+            document.getElementById('date').addEventListener('change', saveMetadata);
+            document.getElementById('time').addEventListener('change', saveMetadata);
+            document.getElementById('venue').addEventListener('change', saveMetadata);
+            document.getElementById('agenda').addEventListener('change', saveMetadata);
+
+            checkServerSilently();
+            await loadUserSessions();
+        });
+
+        async function loadUserSessions() {
+            try {
+                const response = await fetch('/user_discussion_sessions');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    userSessions = data.sessions;
+
+                    // Only render if we're in personal view
+                    if (currentView === 'personal') {
+                        renderSessionList();
+                    }
+
+                    // Auto-select most recent session only on initial load
+                    if (userSessions.length > 0 && !currentSessionId) {
+                        loadSession(userSessions[0].session_id);
+                    } else if (userSessions.length === 0 && !currentSessionId) {
+                        updateSessionBanner('No sessions yet - Click "+ New Session" to start');
+                    }
+                } else {
+                    log('✗ Failed to load sessions');
+                }
+            } catch (error) {
+                log('✗ Error loading sessions: ' + error.message);
+            }
+        }
+
+        function renderSessionList() {
+    const sessionList = document.getElementById('sessionList');
+
+    if (userSessions.length === 0) {
+        sessionList.innerHTML = '<p style="color: #999; text-align: center;">No sessions yet</p>';
+        return;
+    }
+
+    sessionList.innerHTML = '';
+    userSessions.forEach(session => {
+        const sessionItem = document.createElement('div');
+        sessionItem.className = 'session-item';
+        if (session.session_id === currentSessionId) {
+            sessionItem.classList.add('active');
+        }
+
+        const name = session.session_name || 'Unnamed Session';
+        const date = session.meeting_date || 'No date';
+        const resultCount = session.result_count || 0;
+
+        sessionItem.innerHTML = `
+            <div class="session-item-header">
+                <div class="session-item-content">
+                    <div class="session-item-name">${name}</div>
+                    <div class="session-item-meta">${date}</div>
+                    <div class="session-item-count">${resultCount} result(s)</div>
+                </div>
+                <button class="session-options-btn" onclick="toggleSessionMenu('${session.session_id}', event)">
+                    ⋮
+                </button>
+            </div>
+        `;
+
+        // Create menu (hidden by default)
+        const menu = document.createElement('div');
+        menu.id = `menu-${session.session_id}`;
+        menu.className = 'session-menu';
+        menu.style.display = 'none';
+        menu.innerHTML = `
+            <div class="session-menu-item" onclick="renameSession('${session.session_id}', event)">
+                ✏️ Rename
+            </div>
+            <div class="session-menu-item delete" onclick="deleteSession('${session.session_id}', event)">
+                🗑️ Delete
+            </div>
+        `;
+        sessionItem.appendChild(menu);
+
+        // Click on session item (not the button) to load it
+        sessionItem.querySelector('.session-item-content').onclick = () => loadSession(session.session_id);
+
+        sessionList.appendChild(sessionItem);
+    });
+}
+
+        async function createNewSession(isShared = false) {
+            try {
+                const sessionName = prompt(isShared ? 'Enter shared session name:' : 'Enter session name:');
+
+                if (!sessionName || !sessionName.trim()) {
+                    return;
+                }
+
+                const requestData = {
+                    session_name: sessionName.trim(),
+                    is_shared: isShared
+                };
+
+                // If creating shared session, include project_id
+                if (isShared && currentProjectId) {
+                    requestData.project_id = currentProjectId;
+                }
+
+                const response = await fetch('/create_discussion_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    log(`✓ ${isShared ? 'Shared' : 'Personal'} session created: ${sessionName.trim()}`);
+
+                    // Reload appropriate session list
+                    if (isShared && currentProjectId) {
+                        await loadProjectSessions(currentProjectId);
+                    } else {
+                        await loadUserSessions();
+                    }
+
+                    // Load the new session
+                    await loadSession(data.session_id);
+                } else {
+                    alert('Failed to create session');
+                }
+
+            } catch (error) {
+                log('✗ Error creating session: ' + error.message);
+                alert('Error creating session');
+            }
+        }
+
+        async function loadSession(sessionId) {
+    try {
+        const response = await fetch(`/discussion_session/${sessionId}`);
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            const session = data.session;
+            currentSessionId = sessionId;
+
+            // Update metadata fields
+            document.getElementById('date').value = session.meeting_date || '';
+            document.getElementById('time').value = session.meeting_time || '';
+            document.getElementById('venue').value = session.venue || '';
+            document.getElementById('agenda').value = session.agenda || '';
+
+            // CLEAR and reload results
+            allResults = [];
+            resultOrderCounter = 0;
+
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '';
+
+            if (session.results.length > 0) {
+                document.getElementById('resultsSection').style.display = 'block';
+                session.results.forEach((result, index) => {
+                    displayStoredResult(result, index + 1);
+                    allResults.push({
+                        mode: result.mode,
+                        summaryLength: result.summary_length,
+                        result: result.result_text,
+                        timestamp: result.created_at
+                    });
+                });
+                resultOrderCounter = session.results.length;
+            } else {
+                document.getElementById('resultsSection').style.display = 'none';
+            }
+
+            renderSessionList(); // Update active state
+            updateSessionBanner(`Active Session: ${session.session_name || 'Unnamed Session'}`);
+            log(`✓ Loaded session: ${session.session_name || 'Unnamed'} with ${session.results.length} result(s)`);
+        } else {
+            alert('Failed to load session');
+        }
+    } catch (error) {
+        log('✗ Error loading session: ' + error.message);
+        alert('Error loading session');
+    }
+}
+
+        function displayStoredResult(result, resultNumber) {
+            const resultsContainer = document.getElementById('results');
+
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result-item';
+
+            const header = document.createElement('div');
+            header.className = 'result-header';
+
+            const title = document.createElement('h3');
+
+            if (result.mode === 'Summary' && result.summary_length) {
+                title.textContent = `${resultNumber}. Summary (${result.summary_length})`;
+            } else if (result.mode === 'GLOBAL SUMMARY') {
+                title.textContent = `${resultNumber}. Global Summary`;
+            } else {
+                title.textContent = `${resultNumber}. ${result.mode}`;
+            }
+
+            header.appendChild(title);
+
+            const content = document.createElement('div');
+            content.className = 'result-content';
+
+            const cleanText = result.result_text
+                .replace(/\[SUMMARY[^\]]*\]\s*/g, '')
+                .replace(/\[ACTION POINTS\]\s*/g, '')
+                .replace(/\[GLOBAL SUMMARY\]\s*/g, '')
+                .trim();
+
+            content.innerHTML = formatTextToHTML(cleanText);
+
+            resultDiv.appendChild(header);
+            resultDiv.appendChild(content);
+
+            resultsContainer.appendChild(resultDiv);
+        }
+
+        function updateSessionBanner(message) {
+            const banner = document.getElementById('sessionBanner');
+            banner.textContent = message;
+            banner.style.display = 'block';
+            banner.style.background = currentSessionId ? '#4caf50' : '#ffc107';
+            banner.style.color = currentSessionId ? 'white' : '#333';
+        }
+
+        async function saveMetadata() {
+            if (!currentSessionId) return;
+
+            try {
+                const response = await fetch('/update_session_metadata', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        meeting_date: document.getElementById('date').value,
+                        meeting_time: document.getElementById('time').value,
+                        venue: document.getElementById('venue').value,
+                        agenda: document.getElementById('agenda').value
+                    })
+                });
+
+                if (response.ok) {
+                    log('✓ Metadata saved');
+                }
+            } catch (error) {
+                log('✗ Error saving metadata: ' + error.message);
+            }
+        }
+
+        async function checkServerSilently() {
+            try {
+                const response = await fetch(`${serverUrl}/health`);
+                const data = await response.json();
+                if (data.gpu_server?.status === 'healthy' && data.gpu_server?.model_loaded) {
+                    log('✓ Server connected and ready');
+                } else {
+                    log('⚠ Server connected but model loading');
+                }
+            } catch (error) {
+                log('✗ Cannot connect to server: ' + error.message);
+            }
+        }
+
+        function getCurrentModeFromUI() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            return mode;
+        }
+
+        function getCurrentSummaryLengthFromUI() {
+            const lengthRadio = document.querySelector('input[name="summaryLength"]:checked');
+            return lengthRadio ? lengthRadio.value : null;
+        }
+
+        function getFullModeFromUI() {
+            const mode = getCurrentModeFromUI();
+            if (mode === 'Summary') {
+                const length = getCurrentSummaryLengthFromUI();
+                if (!length) return null;
+                return `Summary ${length}`;
+            }
+            return mode;
+        }
+
+        function handleModeChange() {
+            const mode = getCurrentModeFromUI();
+            const summaryLengthGroup = document.getElementById('summaryLengthGroup');
+
+            summaryLengthGroup.style.display = mode === 'Summary' ? 'block' : 'none';
+
+            // When switching back to Summary, default to Short
+            if (mode === 'Summary') {
+                document.getElementById('lengthShort').checked = true;
+            }
+
+            // If recording is active, check if we need to process mode switch
+            if (isRecording && !isProcessingModeSwitch) {
+                const currentModeType = mode;
+
+                // Only process if we're switching between Summary and Action Points
+                if (lastModeType && lastModeType !== currentModeType) {
+                    log(`🔄 Mode switch detected: ${lastModeType} → ${currentModeType}`);
+                    processModeSwitch(lastModeType, currentModeType);
+                } else {
+                    // Just a summary length change - do nothing, will be validated at next chunk
+                    if (mode === 'Summary') {
+                        const length = getCurrentSummaryLengthFromUI();
+                        log(`📏 Summary length changed to: ${length} (will apply at next chunk)`);
+                    }
+                }
+            }
+        }
+
+        async function startRec() {
+            if (!currentSessionId) {
+                alert('Please create or select a session first');
+                return;
+            }
+
+            try {
+                const mode = getCurrentModeFromUI();
+                if (mode === 'Summary') {
+                    const length = getCurrentSummaryLengthFromUI();
+                    if (!length) {
+                        alert('Please select a Summary Length (Short/Medium/Long) before starting the meeting.');
+                        log('✗ Cannot start: No summary length selected');
+                        return;
+                    }
+                }
+
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+                mediaStreamRef = stream;
+
+                isRecording = false;
+                isPaused = false;
+                startTime = null;
+                pausedTime = 0;
+                pauseStartTime = null;
+                audioChunks = [];
+                bufferData = [];
+
+                // Set last mode type
+                lastModeType = getCurrentModeFromUI();
+
+                currentMimeType = 'audio/wav';
+
+                const audioTrack = stream.getAudioTracks()[0];
+                const settings = audioTrack.getSettings();
+                const micSampleRate = settings.sampleRate || 48000;
+
+                log(`🎤 Microphone sample rate: ${micSampleRate}Hz`);
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioInput = audioContext.createMediaStreamSource(stream);
+
+                const bufferSize = 4096;
+                scriptProcessor = audioContext.createScriptProcessor(bufferSize, 1, 1);
+
+                scriptProcessor.onaudioprocess = function(e) {
+                    if (!isPaused && isRecording) {
+                        const inputData = e.inputBuffer.getChannelData(0);
+                        const buffer = new Float32Array(inputData);
+                        bufferData.push(buffer);
+                    }
+                };
+
+                audioInput.connect(scriptProcessor);
+                scriptProcessor.connect(audioContext.destination);
+
+                isRecording = true;
+                isPaused = false;
+                startTime = Date.now();
+                lastChunkTime = Date.now();
+                pausedTime = 0;
+                chunkCounter = 0;
+                meetingStartTime = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+                startTimer();
+                startChunkTimer();
+                startAutoChunking();
+
+                document.getElementById('recIndicator').classList.add('active');
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+                document.getElementById('pauseBtn').textContent = 'Pause Meeting';
+                document.getElementById('stopBtn').disabled = false;
+
+                const fullMode = getFullModeFromUI();
+                log('🎙 Meeting started - Mode: ' + fullMode + ` (Recording at ${micSampleRate}Hz)`);
+
+            } catch (error) {
+                log('✗ Error starting recording: ' + error.message);
+                alert('Error accessing microphone: ' + error.message);
+            }
+        }
+
+        function getChunkDuration() {
+            return 300000; // 5 minutes
+        }
+
+        function startAutoChunking() {
+            stopAutoChunking();
+            const duration = getChunkDuration();
+
+            autoChunkInterval = setInterval(() => {
+                if (isRecording && !isPaused && !isProcessingModeSwitch) {
+                    // Validate current UI mode at chunk time
+                    const currentMode = getCurrentModeFromUI();
+                    const currentLength = getCurrentSummaryLengthFromUI();
+                    const fullMode = currentMode === 'Summary' ? `${currentMode} ${currentLength}` : currentMode;
+
+                    log(`⏱ Auto-processing 5-minute chunk (Mode: ${fullMode})`);
+                    processCurrentChunk();
+                    lastChunkTime = Date.now();
+                }
+            }, duration);
+        }
+
+        function stopAutoChunking() {
+            if (autoChunkInterval) {
+                clearInterval(autoChunkInterval);
+                autoChunkInterval = null;
+            }
+        }
+
+        function startChunkTimer() {
+            chunkTimerInterval = setInterval(() => {
+                if (isRecording && !isPaused) {
+                    const elapsed = Math.floor((Date.now() - lastChunkTime) / 1000);
+                    const chunkDuration = getChunkDuration() / 1000;
+                    const remaining = chunkDuration - elapsed;
+
+                    if (remaining >= 0) {
+                        const minutes = Math.floor(remaining / 60);
+                        const seconds = remaining % 60;
+                        const timeStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                        document.getElementById('chunkTimer').textContent = ``;
+                    }
+                } else {
+                    document.getElementById('chunkTimer').textContent = '';
+                }
+            }, 1000);
+        }
+
+        function pauseRec() {
+            if (!isRecording) {
+                log('✗ No active recording to pause');
+                return;
+            }
+
+            if (isPaused) {
+                isPaused = false;
+                if (pauseStartTime) {
+                    pausedTime += (Date.now() - pauseStartTime);
+                    pauseStartTime = null;
+                }
+                document.getElementById('pauseBtn').textContent = 'Pause Meeting';
+                log('▶ Recording resumed');
+            } else {
+                isPaused = true;
+                pauseStartTime = Date.now();
+                document.getElementById('pauseBtn').textContent = 'Resume Meeting';
+                log('⏸ Recording paused');
+            }
+        }
+
+        async function processModeSwitch(oldModeType, newModeType) {
+            if (isProcessingModeSwitch) {
+                log('⚠ Already processing a mode switch, please wait...');
+                return;
+            }
+
+            isProcessingModeSwitch = true;
+
+            // Get the old mode with current summary length (if applicable)
+            let oldMode = oldModeType;
+            let oldLength = null;
+            if (oldModeType === 'Summary') {
+                oldLength = getCurrentSummaryLengthFromUI();
+            }
+
+            const oldFullMode = oldMode === 'Summary' ? `${oldMode} ${oldLength}` : oldMode;
+            log(`🔄 Processing accumulated audio with OLD mode: ${oldFullMode}`);
+
+            // Process with OLD mode
+            await processCurrentChunkWithMode(oldMode, oldLength);
+
+            // Update lastModeType to new mode
+            lastModeType = newModeType;
+
+            lastChunkTime = Date.now();
+
+            const newFullMode = getFullModeFromUI();
+            log(`✓ Switched to ${newFullMode} - Timer reset, next chunk in 5 minutes`);
+
+            stopAutoChunking();
+            startAutoChunking();
+            isProcessingModeSwitch = false;
+        }
+
+        async function processCurrentChunk() {
+            // Always read current mode from UI
+            const mode = getCurrentModeFromUI();
+            const length = getCurrentSummaryLengthFromUI();
+            await processCurrentChunkWithMode(mode, length);
+        }
+
+        async function processCurrentChunkWithMode(mode, summaryLength) {
+            if (bufferData.length === 0) {
+                log('⚠ No audio to process');
+                return;
+            }
+
+            const fullMode = mode === 'Summary' ? `${mode} ${summaryLength}` : mode;
+            log(`📤 Processing chunk with mode: ${fullMode}`);
+
+            const chunksToProcess = [...bufferData];
+            bufferData = [];
+
+            let totalLength = 0;
+            for (const chunk of chunksToProcess) {
+                totalLength += chunk.length;
+            }
+
+            const mergedData = new Float32Array(totalLength);
+            let offset = 0;
+            for (const chunk of chunksToProcess) {
+                mergedData.set(chunk, offset);
+                offset += chunk.length;
+            }
+
+            const wavBlob = encodeWAV(mergedData, audioContext.sampleRate, 16000);
+            const duration = (mergedData.length / audioContext.sampleRate).toFixed(2);
+            log(`📊 WAV audio size: ${(wavBlob.size / 1024).toFixed(2)} KB, Duration: ${duration}s`);
+
+            chunkCounter++;
+            resultOrderCounter++;
+            log('📡 Sending WAV audio to server');
+            await sendAudioToServer(wavBlob, mode, summaryLength);
+        }
+
+        async function endMeeting() {
+            if (!isRecording) {
+                log('✗ No active meeting to end');
+                return;
+            }
+
+            log('🛑 Ending meeting...');
+            document.getElementById('stopBtn').disabled = true;
+            log('⏳ Please wait - processing final audio chunk...');
+
+            stopTimer();
+            stopAutoChunking();
+            if (chunkTimerInterval) {
+                clearInterval(chunkTimerInterval);
+                chunkTimerInterval = null;
+            }
+
+            isRecording = false;
+            isPaused = false;
+
+            try {
+                if (bufferData.length > 0) {
+                    // Validate current UI mode for final chunk
+                    const mode = getCurrentModeFromUI();
+                    const length = getCurrentSummaryLengthFromUI();
+                    const fullMode = mode === 'Summary' ? `${mode} ${length}` : mode;
+                    log(`📤 Processing final audio chunk with mode: ${fullMode}`);
+                    await processCurrentChunkAndWait(mode, length);
+                    log('✓ Final chunk processing complete!');
+                } else {
+                    log('ℹ No remaining audio to process');
+                }
+            } catch (err) {
+                log('✗ Error while processing final chunk: ' + err.message);
+            }
+
+            try {
+                if (scriptProcessor) {
+                    scriptProcessor.onaudioprocess = null;
+                    try { scriptProcessor.disconnect(); } catch(e){}
+                    scriptProcessor = null;
+                    log('✓ Audio processing stopped');
+                }
+
+                if (audioInput) {
+                    try { audioInput.disconnect(); } catch(e){}
+                    audioInput = null;
+                    log('✓ Audio input disconnected');
+                }
+
+                if (mediaStreamRef) {
+                    try {
+                        mediaStreamRef.getTracks().forEach(track => {
+                            try { track.stop(); } catch(e){}
+                            log(`✓ Stopped ${track.kind} track`);
+                        });
+                    } catch (e) {
+                        log('✗ Error stopping media tracks: ' + e.message);
+                    }
+                    mediaStreamRef = null;
+                }
+
+                if (audioContext && audioContext.state !== 'closed') {
+                    try {
+                        await audioContext.close();
+                        audioContext = null;
+                        log('✓ AudioContext closed');
+                    } catch (e) {
+                        log('✗ Error closing AudioContext: ' + e.message);
+                    }
+                }
+            } catch (error) {
+                log('✗ Error cleaning up audio: ' + error.message);
+            }
+
+            document.getElementById('recIndicator').classList.remove('active');
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('pauseBtn').textContent = 'Pause Meeting';
+            document.getElementById('timer').textContent = '00:00:00';
+            document.getElementById('chunkTimer').textContent = '';
+
+            bufferData = [];
+            chunkCounter = 0;
+            meetingStartTime = null;
+            isPaused = false;
+            pausedTime = 0;
+            pauseStartTime = null;
+            startTime = null;
+            lastChunkTime = null;
+            lastModeType = null;
+
+            log('✅ Meeting ended successfully - all processing complete!');
+
+            // Reload session to get updated results
+            if (currentSessionId) {
+                await loadSession(currentSessionId);
+            }
+        }
+
+        async function processCurrentChunkAndWait(mode, summaryLength) {
+            if (bufferData.length === 0) {
+                log('⚠ No audio to process');
+                return;
+            }
+
+            const fullMode = mode === 'Summary' ? `${mode} ${summaryLength}` : mode;
+            log(`📤 Processing final chunk with mode: ${fullMode}`);
+
+            const chunksToProcess = [...bufferData];
+            bufferData = [];
+
+            let totalLength = 0;
+            for (const chunk of chunksToProcess) {
+                totalLength += chunk.length;
+            }
+
+            const mergedData = new Float32Array(totalLength);
+            let offset = 0;
+            for (const chunk of chunksToProcess) {
+                mergedData.set(chunk, offset);
+                offset += chunk.length;
+            }
+
+            const wavBlob = encodeWAV(mergedData, audioContext.sampleRate, 16000);
+            const duration = (mergedData.length / audioContext.sampleRate).toFixed(2);
+            log(`📊 WAV audio size: ${(wavBlob.size / 1024).toFixed(2)} KB, Duration: ${duration}s`);
+
+            chunkCounter++;
+            resultOrderCounter++;
+            log('📡 Sending final WAV audio to server and waiting for completion...');
+            await sendAudioToServerAndWait(wavBlob, mode, summaryLength);
+        }
+
+        function uploadFile() {
+            if (!currentSessionId) {
+                alert('Please create or select a session first');
+                return;
+            }
+            document.getElementById('fileInput').click();
+        }
+
+        async function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const mode = getCurrentModeFromUI();
+            let summaryLength = null;
+
+            if (mode === 'Summary') {
+                summaryLength = getCurrentSummaryLengthFromUI();
+                if (!summaryLength) {
+                    log('✗ Please select a summary length first');
+                    alert('Please select a Summary Length (Short/Medium/Long) before uploading.');
+                    event.target.value = '';
+                    return;
+                }
+            }
+
+            if (!mode) {
+                log('✗ Please select a processing mode first');
+                alert('Please select a processing mode first');
+                event.target.value = '';
+                return;
+            }
+
+            const fullMode = mode === 'Summary' ? `${mode} ${summaryLength}` : mode;
+            log(`📁 Uploading file: ${file.name} with mode: ${fullMode}`);
+            resultOrderCounter++;
+            await sendAudioToServer(file, mode, summaryLength, true);
+
+            event.target.value = '';
+        }
+
+        async function sendAudioToServer(audioBlob, mode, summaryLength, isUpload = false) {
+            const formData = new FormData();
+            const filename = `chunk_${Date.now()}.wav`;
+
+            formData.append('file', audioBlob, filename);
+            formData.append('mode', mode);
+            if (mode === 'Summary') {
+                formData.append('summary_length', summaryLength);
+            }
+            formData.append('is_upload', isUpload ? 'true' : 'false');
+            formData.append('session_id', currentSessionId);
+            formData.append('result_order', resultOrderCounter.toString());
+
+            try {
+                const fullMode = mode === 'Summary' ? `${mode} ${summaryLength}` : mode;
+                log(`📤 Uploading WAV to server... (Mode: ${fullMode})`);
+
+                const response = await fetch(`${serverUrl}/process_audio`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Server request failed');
+                }
+
+                const data = await response.json();
+                log(`✓ Job created: ${data.job_id.substring(0, 8)}... (${fullMode})`);
+
+                pollJobStatus(data.job_id, mode, summaryLength);
+
+            } catch (error) {
+                log('✗ Error sending audio: ' + error.message);
+                alert('Error uploading audio: ' + error.message);
+            }
+        }
+
+        async function sendAudioToServerAndWait(audioBlob, mode, summaryLength, isUpload = false) {
+            const formData = new FormData();
+            const filename = `chunk_${Date.now()}.wav`;
+
+            formData.append('file', audioBlob, filename);
+            formData.append('mode', mode);
+            if (mode === 'Summary') {
+                formData.append('summary_length', summaryLength);
+            }
+            formData.append('is_upload', isUpload ? 'true' : 'false');
+            formData.append('session_id', currentSessionId);
+            formData.append('result_order', resultOrderCounter.toString());
+
+            try {
+                const fullMode = mode === 'Summary' ? `${mode} ${summaryLength}` : mode;
+                log(`📤 Uploading final WAV to server... (Mode: ${fullMode})`);
+
+                const response = await fetch(`${serverUrl}/process_audio`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Server request failed');
+                }
+
+                const data = await response.json();
+                log(`✓ Final job created: ${data.job_id.substring(0, 8)}... (${fullMode})`);
+
+                await waitForJobCompletion(data.job_id, mode, summaryLength);
+
+            } catch (error) {
+                log('✗ Error sending final audio: ' + error.message);
+                alert('Error uploading final audio: ' + error.message);
+            }
+        }
+
+        async function waitForJobCompletion(jobId, originalMode, summaryLength) {
+            return new Promise(async (resolve, reject) => {
+                const maxAttempts = 180;
+                let attempts = 0;
+
+                const checkStatus = async () => {
+                    attempts++;
+
+                    try {
+                        const response = await fetch(`${serverUrl}/job_status/${jobId}`);
+
+                        if (!response.ok) {
+                            throw new Error('Failed to get job status');
+                        }
+
+                        const data = await response.json();
+
+                        if (data.status === 'completed') {
+                            log(`✓ Final job ${jobId.substring(0, 8)}... completed!`);
+                            displayResult(data, originalMode, summaryLength);
+                            resolve();
+                        } else if (data.status === 'error') {
+                            log(`✗ Final job ${jobId.substring(0, 8)}... failed: ${data.error}`);
+                            reject(new Error('Processing failed: ' + data.error));
+                        } else if (attempts >= maxAttempts) {
+                            log(`⏱ Final job ${jobId.substring(0, 8)}... timed out`);
+                            reject(new Error('Processing timed out'));
+                        } else {
+                            if (attempts % 5 === 0) {
+                                log(`⏳ Processing final chunk... (${attempts}s)`);
+                            }
+                            setTimeout(checkStatus, 1000);
+                        }
+                    } catch (error) {
+                        log('✗ Error checking final job status: ' + error.message);
+                        reject(error);
+                    }
+                };
+
+                checkStatus();
+            });
+        }
+
+        async function pollJobStatus(jobId, originalMode, summaryLength) {
+            const maxAttempts = 180;
+            let attempts = 0;
+            let completed = false;
+
+            const pollInterval = setInterval(async () => {
+                if (completed) return;
+
+                attempts++;
+
+                try {
+                    const response = await fetch(`${serverUrl}/job_status/${jobId}`);
+
+                    if (!response.ok) {
+                        throw new Error('Failed to get job status');
+                    }
+
+                    const data = await response.json();
+
+                    if (completed) return;
+
+                    if (data.status === 'completed') {
+                        completed = true;
+                        clearInterval(pollInterval);
+                        log(`✓ Job ${jobId.substring(0, 8)}... completed!`);
+                        displayResult(data, originalMode, summaryLength);
+                    } else if (data.status === 'error') {
+                        completed = true;
+                        clearInterval(pollInterval);
+                        log(`✗ Job ${jobId.substring(0, 8)}... failed: ${data.error}`);
+                        alert('Processing failed: ' + data.error);
+                    } else if (attempts >= maxAttempts) {
+                        completed = true;
+                        clearInterval(pollInterval);
+                        log(`⏱ Job ${jobId.substring(0, 8)}... timed out`);
+                        alert('Processing timed out. Please try again.');
+                    } else if (attempts % 5 === 0) {
+                        log(`⏳ Processing... (${attempts}s)`);
+                    }
+                } catch (error) {
+                    if (!completed) {
+                        completed = true;
+                        clearInterval(pollInterval);
+                        log('✗ Error polling job status: ' + error.message);
+                    }
+                }
+            }, 1000);
+        }
+
+        function displayResult(jobData, originalMode, summaryLength) {
+            document.getElementById('resultsSection').style.display = 'block';
+            const resultsContainer = document.getElementById('results');
+
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result-item';
+
+            const header = document.createElement('div');
+            header.className = 'result-header';
+
+            const title = document.createElement('h3');
+
+            const resultNumber = allResults.length + 1;
+
+            if (originalMode === 'Summary' && summaryLength) {
+                title.textContent = `${resultNumber}. Summary (${summaryLength})`;
+            } else if (originalMode === 'GLOBAL SUMMARY') {
+                title.textContent = `${resultNumber}. Global Summary`;
+            } else if (originalMode === 'Action Points') {
+                title.textContent = `${resultNumber}. Action Points`;
+            } else {
+                title.textContent = `${resultNumber}. ${originalMode}` ;
+            }
+
+            header.appendChild(title);
+
+            const content = document.createElement('div');
+            content.className = 'result-content';
+
+            const cleanText = jobData.result
+                .replace(/\[SUMMARY[^\]]*\]\s*/g, '')
+                .replace(/\[ACTION POINTS\]\s*/g, '')
+                .replace(/\[GLOBAL SUMMARY\]\s*/g, '')
+                .trim();
+
+            content.innerHTML = formatTextToHTML(cleanText);
+
+            resultDiv.appendChild(header);
+            resultDiv.appendChild(content);
+
+            resultsContainer.appendChild(resultDiv);
+
+            allResults.push({
+                mode: originalMode,
+                summaryLength: summaryLength,
+                result: jobData.result,
+                timestamp: new Date().toISOString()
+            });
+
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            log('✅ Result automatically saved to session');
+        }
+
+        function formatTextToHTML(text) {
+            text = text
+                .replace(/\*\*\*/g, '')
+                .replace(/\*\*/g, '')
+                .replace(/\*/g, '')
+                .replace(/__|__/g, '')
+                .replace(/\#\#\#/g, '')
+                .replace(/\#\#/g, '')
+                .replace(/\#/g, '')
+                .replace(/~~(.+?)~~/g, '$1');
+
+            let html = '';
+            const lines = text.split('\n');
+            let inParagraph = false;
+            let inOrderedList = false;
+            let inUnorderedList = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+
+                if (line === '') {
+                    if (inParagraph) {
+                        html += '</p>';
+                        inParagraph = false;
+                    }
+                    if (inOrderedList) {
+                        html += '</ol>';
+                        inOrderedList = false;
+                    }
+                    if (inUnorderedList) {
+                        html += '</ul>';
+                        inUnorderedList = false;
+                    }
+                    continue;
+                }
+
+                const actionMatch = line.match(/^➤\s*(.+)/);
+                if (actionMatch) {
+                    if (inParagraph) {
+                        html += '</p>';
+                        inParagraph = false;
+                    }
+                    if (inOrderedList) {
+                        html += '</ol>';
+                        inOrderedList = false;
+                    }
+                    if (inUnorderedList) {
+                        html += '</ul>';
+                        inUnorderedList = false;
+                    }
+                    html += `<div class="action-item">${actionMatch[1]}</div>`;
+                    continue;
+                }
+
+                const numberedMatch = line.match(/^(\d+)[\.\)]\s+(.+)/);
+                if (numberedMatch) {
+                    if (inParagraph) {
+                        html += '</p>';
+                        inParagraph = false;
+                    }
+                    if (inUnorderedList) {
+                        html += '</ul>';
+                        inUnorderedList = false;
+                    }
+                    if (!inOrderedList) {
+                        html += '<ol>';
+                        inOrderedList = true;
+                    }
+                    html += `<li>${numberedMatch[2]}</li>`;
+                    continue;
+                }
+
+                const bulletMatch = line.match(/^[-•]\s+(.+)/);
+                if (bulletMatch) {
+                    if (inParagraph) {
+                        html += '</p>';
+                        inParagraph = false;
+                    }
+                    if (inOrderedList) {
+                        html += '</ol>';
+                        inOrderedList = false;
+                    }
+                    if (!inUnorderedList) {
+                        html += '<ul>';
+                        inUnorderedList = true;
+                    }
+                    html += `<li>${bulletMatch[1]}</li>`;
+                    continue;
+                }
+
+                if (line.match(/^[A-Z\s]{4,}:?\s*$/)) {
+                    if (inParagraph) {
+                        html += '</p>';
+                        inParagraph = false;
+                    }
+                    if (inOrderedList) {
+                        html += '</ol>';
+                        inOrderedList = false;
+                    }
+                    if (inUnorderedList) {
+                        html += '</ul>';
+                        inUnorderedList = false;
+                    }
+                    html += `<h4>${line.replace(/:+$/, '')}</h4>`;
+                    continue;
+                }
+
+                if (inOrderedList) {
+                    html += '</ol>';
+                    inOrderedList = false;
+                }
+                if (inUnorderedList) {
+                    html += '</ul>';
+                    inUnorderedList = false;
+                }
+
+                if (!inParagraph) {
+                    html += '<p>';
+                    inParagraph = true;
+                } else {
+                    html += ' ';
+                }
+                html += line;
+            }
+
+            if (inParagraph) {
+                html += '</p>';
+            }
+            if (inOrderedList) {
+                html += '</ol>';
+            }
+            if (inUnorderedList) {
+                html += '</ul>';
+            }
+
+            return html;
+        }
+
+        async function genGlobalSummary() {
+            if (!currentSessionId) {
+                alert('Please create or select a session first');
+                return;
+            }
+
+            if (allResults.length === 0) {
+                log('✗ No results available for global summary');
+                alert('No results available. Please process some audio first.');
+                return;
+            }
+
+            // Find the button and disable it
+            const globalSummaryBtn = event.target || document.querySelector('button[onclick="genGlobalSummary()"]');
+            const originalText = globalSummaryBtn.textContent;
+            globalSummaryBtn.disabled = true;
+            globalSummaryBtn.textContent = 'Generating...';
+
+            log('🌐 Generating global summary...');
+
+            try {
+                const texts = allResults.map(r => r.result);
+
+                const response = await fetch(`${serverUrl}/global_summary`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        texts: texts,
+                        session_id: currentSessionId
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to generate global summary');
+                }
+
+                const data = await response.json();
+
+                displayResult({
+                    mode: 'GLOBAL SUMMARY',
+                    result: data.global_summary,
+                    summary_length: ''
+                }, 'GLOBAL SUMMARY', null);
+
+                log('✅ Global summary generated and saved successfully!');
+
+                // Reload session to update result count
+                await loadUserSessions();
+
+            } catch (error) {
+                log('✗ Error generating global summary: ' + error.message);
+                alert('Error generating global summary: ' + error.message);
+            } finally {
+                // Re-enable button after completion or error
+                globalSummaryBtn.disabled = false;
+                globalSummaryBtn.textContent = originalText;
+            }
+        }
+
+        async function saveResults() {
+            if (allResults.length === 0) {
+                log('✗ No results to save');
+                alert('No results to save. Please process some audio first.');
+                return;
+            }
+
+            log('💾 Preparing results for download...');
+
+            try {
+                const meetingDate = document.getElementById('date').value || 'Not specified';
+                const meetingTime = document.getElementById('time').value || 'Not specified';
+                const venue = document.getElementById('venue').value || 'Not specified';
+                const agenda = document.getElementById('agenda').value || 'Not specified';
+
+                let htmlContent = `
+                    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                    <head>
+                        <meta charset='utf-8'>
+                        <title>Discussion Summary</title>
+                        <style>
+                            body {
+                                font-family: Calibri, Arial, sans-serif;
+                                font-size: 11pt;
+                                line-height: 1.6;
+                                margin: 1in;
+                            }
+                            h1 {
+                                text-align: center;
+                                color: #2E5090;
+                                font-size: 24pt;
+                                margin-bottom: 20pt;
+                                border-bottom: 3pt solid #2E5090;
+                                padding-bottom: 10pt;
+                            }
+                            h2 {
+                                color: #2E5090;
+                                font-size: 16pt;
+                                margin-top: 20pt;
+                                margin-bottom: 10pt;
+                                border-bottom: 2pt solid #D0D0D0;
+                                padding-bottom: 5pt;
+                            }
+                            h3 {
+                                color: #4472C4;
+                                font-size: 14pt;
+                                margin-top: 15pt;
+                                margin-bottom: 8pt;
+                            }
+                            h4 {
+                                color: #5B9BD5;
+                                font-size: 12pt;
+                                margin-top: 12pt;
+                                margin-bottom: 6pt;
+                            }
+                            p {
+                                margin: 8pt 0;
+                                text-align: justify;
+                                line-height: 1.6;
+                            }
+                            ul, ol {
+                                margin: 10pt 0;
+                                padding-left: 30pt;
+                            }
+                            li {
+                                margin: 6pt 0;
+                            }
+                            .action-item {
+                                margin: 6pt 0;
+                                padding-left: 20pt;
+                            }
+                            .action-item::before {
+                                content: '➤ ';
+                                color: #2E5090;
+                                font-weight: bold;
+                                margin-left: -20pt;
+                                margin-right: 8pt;
+                            }
+                            .result-section {
+                                margin-top: 20pt;
+                                padding: 15pt;
+                                border: 2pt solid #D0D0D0;
+                                border-radius: 5pt;
+                                background-color: #FAFAFA;
+                                page-break-inside: avoid;
+                            }
+                            .footer {
+                                margin-top: 30pt;
+                                padding-top: 15pt;
+                                border-top: 2pt solid #D0D0D0;
+                                font-size: 9pt;
+                                color: #666666;
+                                text-align: center;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>Discussion Summary</h1>
+
+                        <h2>Meeting Information</h2>
+
+                        <p><strong>Date:</strong> ${meetingDate} &nbsp;&nbsp;&nbsp;
+                        <strong>Time:</strong> ${meetingTime} &nbsp;&nbsp;&nbsp;
+                        <strong>Venue:</strong> ${venue}</p>
+
+                        <p><strong>Agenda:</strong> ${agenda}</p>
+
+                        <h2>Results</h2>
+                `;
+
+                allResults.forEach((result, index) => {
+                    const cleanText = result.result
+                        .replace(/\[SUMMARY[^\]]*\]\s*/g, '')
+                        .replace(/\[ACTION POINTS\]\s*/g, '')
+                        .replace(/\[GLOBAL SUMMARY\]\s*/g, '')
+                        .trim();
+
+                    const formattedContent = formatTextToHTML(cleanText);
+
+                    let modeTitle = result.mode;
+                    if (result.mode === 'Summary' && result.summaryLength) {
+                        modeTitle = `Summary (${result.summaryLength})`;
+                    }
+
+                    htmlContent += `
+                        <div class="result-section">
+                            <h3>${index + 1}. ${modeTitle.toUpperCase()}</h3>
+                            ${formattedContent}
+                        </div>
+                    `;
+                });
+
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                htmlContent += `
+                        <div class="footer">
+                            <p>Generated on: ${new Date().toLocaleString()}</p>
+                            <p>Document: Discussion_Summary_${timestamp}.doc</p>
+                            <p>Prepared by <strong>Directorate of Embedded AI Systems Team</strong></p>
+                        </div>
+                    </body>
+                    </html>
+                `;
+
+                const blob = new Blob(['\ufeff', htmlContent], {
+                    type: 'application/msword'
+                });
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Discussion_Summary_${timestamp}.doc`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                log(`✔ Results saved: Discussion_Summary_${timestamp}.doc`);
+                alert('Results saved successfully as Word document!');
+
+            } catch (error) {
+                log('✗ Error saving results: ' + error.message);
+                alert('Error saving results: ' + error.message);
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    const elapsed = Math.floor((Date.now() - startTime - pausedTime) / 1000);
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const seconds = elapsed % 60;
+
+                    document.getElementById('timer').textContent =
+                        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function log(message) {
+            const statusBox = document.getElementById('status');
+            const p = document.createElement('p');
+            const timestamp = new Date().toLocaleTimeString();
+            p.textContent = `[${timestamp}] ${message}`;
+            statusBox.appendChild(p);
+            statusBox.scrollTop = statusBox.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function encodeWAV(samples, inputSampleRate, outputSampleRate) {
+            let resampledData;
+            if (inputSampleRate !== outputSampleRate) {
+                const ratio = inputSampleRate / outputSampleRate;
+                const newLength = Math.round(samples.length / ratio);
+                resampledData = new Float32Array(newLength);
+
+                for (let i = 0; i < newLength; i++) {
+                    const srcIndex = i * ratio;
+                    const srcIndexFloor = Math.floor(srcIndex);
+                    const srcIndexCeil = Math.min(srcIndexFloor + 1, samples.length - 1);
+                    const t = srcIndex - srcIndexFloor;
+                    resampledData[i] = samples[srcIndexFloor] * (1 - t) + samples[srcIndexCeil] * t;
+                }
+            } else {
+                resampledData = samples;
+            }
+
+            const buffer = new ArrayBuffer(44 + resampledData.length * 2);
+            const view = new DataView(buffer);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + resampledData.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, outputSampleRate, true);
+            view.setUint32(28, outputSampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, resampledData.length * 2, true);
+
+            floatTo16BitPCM(view, 44, resampledData);
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        function floatTo16BitPCM(view, offset, input) {
+            for (let i = 0; i < input.length; i++, offset += 2) {
+                const s = Math.max(-1, Math.min(1, input[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+        }
+
+        // ADD THESE NEW FUNCTIONS HERE
+        // Close all menus when clicking outside
+        
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.session-options-btn')) {
+                document.querySelectorAll('.session-menu').forEach(m => m.style.display = 'none');
+            }
+        });
+
+        function toggleSessionMenu(sessionId, event) {
+            event.stopPropagation();
+            const menu = document.getElementById(`menu-${sessionId}`);
+
+            // Close all other menus first
+            document.querySelectorAll('.session-menu').forEach(m => {
+                if (m.id !== `menu-${sessionId}`) {
+                    m.style.display = 'none';
+                }
+            });
+
+            // Toggle this menu
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function renameSession(sessionId, event) {
+            event.stopPropagation();
+
+            // Close menu
+            document.getElementById(`menu-${sessionId}`).style.display = 'none';
+
+            // Get current name
+            const session = userSessions.find(s => s.session_id === sessionId);
+            const currentName = session ? session.session_name : '';
+
+            const newName = prompt('Enter new session name:', currentName);
+
+            if (!newName || !newName.trim() || newName.trim() === currentName) {
+                return; // Cancelled or no change
+            }
+
+            try {
+                const response = await fetch('/rename_discussion_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        new_name: newName.trim()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    log('✓ Session renamed successfully');
+
+                    // Reload appropriate sessions list
+                    if (currentView === 'personal') {
+                        await loadUserSessions();
+                    } else if (currentProjectId) {
+                        await loadProjectSessions(currentProjectId);
+                    }
+
+                    // Update banner if this is the active session
+                    if (currentSessionId === sessionId) {
+                        updateSessionBanner(`Active Session: ${newName.trim()}`);
+                    }
+                } else {
+                    alert('Failed to rename session');
+                }
+            } catch (error) {
+                log('✗ Error renaming session: ' + error.message);
+                alert('Error renaming session');
+            }
+        }
+
+        async function deleteSession(sessionId, event) {
+            event.stopPropagation();
+
+            // Close menu
+            document.getElementById(`menu-${sessionId}`).style.display = 'none';
+
+            const session = userSessions.find(s => s.session_id === sessionId);
+            const sessionName = session ? session.session_name : 'this session';
+
+            if (!confirm(`Are you sure you want to delete "${sessionName}"?\n\nAll results will be permanently deleted.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/delete_discussion_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    log('✓ Session deleted successfully');
+
+                    // If deleted session was active, clear the UI
+                    if (currentSessionId === sessionId) {
+                        currentSessionId = null;
+                        allResults = [];
+                        resultOrderCounter = 0;
+
+                        document.getElementById('results').innerHTML = '';
+                        document.getElementById('resultsSection').style.display = 'none';
+                        document.getElementById('date').value = '';
+                        document.getElementById('time').value = '';
+                        document.getElementById('venue').value = '';
+                        document.getElementById('agenda').value = '';
+                    }
+
+                    // Reload appropriate sessions list
+                    if (currentView === 'personal') {
+                        await loadUserSessions();
+                    } else if (currentProjectId) {
+                        await loadProjectSessions(currentProjectId);
+                    }
+
+                } else {
+                    alert('Failed to delete session');
+                }
+            } catch (error) {
+                log('✗ Error deleting session: ' + error.message);
+                alert('Error deleting session');
+            }
+        }
+        // END OF NEW FUNCTIONS
+
+
+        // ============================================================================
+        // PROJECT AND SESSION TYPE MANAGEMENT
+        // ============================================================================
+
+        function showPersonalSessions() {
+            currentView = 'personal';
+            currentProjectId = null;
+
+            // Update toggle buttons
+            document.getElementById('personalBtn').classList.add('active');
+            document.getElementById('projectsBtn').classList.remove('active');
+
+            // Show/hide views
+            document.getElementById('personalView').style.display = 'block';
+            document.getElementById('projectsView').style.display = 'none';
+
+            // Re-render personal sessions
+            renderSessionList();
+        }
+
+        function showProjectsView() {
+            currentView = 'projects';
+
+            // Update toggle buttons
+            document.getElementById('personalBtn').classList.remove('active');
+            document.getElementById('projectsBtn').classList.add('active');
+
+            // Show/hide views
+            document.getElementById('personalView').style.display = 'none';
+            document.getElementById('projectsView').style.display = 'block';
+
+            // Load and show projects list
+            showProjectsList();
+        }
+
+        async function showProjectsList() {
+            try {
+                // Hide project sessions, show projects list
+                document.getElementById('projectsList').style.display = 'block';
+                document.getElementById('projectSessionsContainer').style.display = 'none';
+                document.getElementById('backToProjectsBtn').style.display = 'none';
+
+                currentProjectId = null;
+
+                // Fetch projects
+                const response = await fetch('/get_projects');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    allProjects = data.projects;
+                    renderProjects();
+                }
+
+            } catch (error) {
+                log('✗ Error loading projects: ' + error.message);
+            }
+        }
+
+        function renderProjects() {
+            const container = document.getElementById('projectsList');
+
+            if (allProjects.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999;">No projects available</p>';
+                return;
+            }
+
+            container.innerHTML = allProjects.map(project => `
+                <div class="project-item" onclick="selectProject('${project.project_id}', '${escapeHtml(project.project_name)}')">
+                    <div class="project-item-name">${escapeHtml(project.project_name)}</div>
+                    <div class="project-item-desc">${escapeHtml(project.project_description || '')}</div>
+                </div>
+            `).join('');
+        }
+
+        async function selectProject(projectId, projectName) {
+            try {
+                currentProjectId = projectId;
+
+                // Hide projects list, show sessions container
+                document.getElementById('projectsList').style.display = 'none';
+                document.getElementById('projectSessionsContainer').style.display = 'block';
+                document.getElementById('backToProjectsBtn').style.display = 'block';
+
+                log(`📂 Selected project: ${projectName}`);
+
+                // Load sessions for this project
+                await loadProjectSessions(projectId);
+
+            } catch (error) {
+                log('✗ Error selecting project: ' + error.message);
+            }
+        }
+
+        async function loadProjectSessions(projectId) {
+            try {
+                const response = await fetch(`/get_project_sessions/${projectId}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    currentProjectSessions = data.sessions;
+                    renderProjectSessions();
+                }
+
+            } catch (error) {
+                log('✗ Error loading project sessions: ' + error.message);
+            }
+        }
+
+        function renderProjectSessions() {
+            const container = document.getElementById('projectSessionsList');
+
+            if (currentProjectSessions.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No shared sessions yet.<br>Create one to get started!</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            currentProjectSessions.forEach(session => {
+                const sessionItem = document.createElement('div');
+                sessionItem.className = 'session-item';
+                if (session.session_id === currentSessionId) {
+                    sessionItem.classList.add('active');
+                }
+
+                const name = escapeHtml(session.session_name || 'Unnamed Session');
+                const creator = escapeHtml(session.username || 'Unknown');
+                const date = new Date(session.updated_at).toLocaleDateString();
+                const time = new Date(session.updated_at).toLocaleTimeString();
+                const resultCount = session.result_count || 0;
+
+                sessionItem.innerHTML = `
+                    <div class="session-item-header">
+                        <div class="session-item-content">
+                            <div class="session-item-name">
+                                ${name}
+                                <span class="session-item-shared-badge">SHARED</span>
+                            </div>
+                            <div class="session-item-meta">${date} ${time}</div>
+                            <div class="session-item-creator">Created by: ${creator}</div>
+                            <div class="session-item-count">${resultCount} result(s)</div>
+                        </div>
+                        <button class="session-options-btn" onclick="toggleSessionMenu('${session.session_id}', event)">
+                            ⋮
+                        </button>
+                    </div>
+                `;
+
+                // Create menu (hidden by default)
+                const menu = document.createElement('div');
+                menu.id = `menu-${session.session_id}`;
+                menu.className = 'session-menu';
+                menu.style.display = 'none';
+                menu.innerHTML = `
+                    <div class="session-menu-item" onclick="renameSession('${session.session_id}', event)">
+                        ✏️ Rename
+                    </div>
+                    <div class="session-menu-item delete" onclick="deleteSession('${session.session_id}', event)">
+                        🗑️ Delete
+                    </div>
+                `;
+                sessionItem.appendChild(menu);
+
+                // Click on session item (not the button) to load it
+                sessionItem.querySelector('.session-item-content').onclick = () => loadSession(session.session_id);
+
+                container.appendChild(sessionItem);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+    </script>
+</body>
+</html>
