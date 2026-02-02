@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title> Discussion Summary </title>
+    <link rel="icon" href="/static/logo.png" type="image/png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Session Sidebar */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-radius: 20px 0 0 20px;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .sidebar h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        /* Mode Toggle Buttons */
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            background: #f0f0f0;
+            color: #666;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .mode-btn:hover {
+            background: #e0e0e0;
+        }
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Project Buttons */
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .project-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            text-align: left;
+            position: relative;
+        }
+        .project-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .project-btn.active {
+            background: #4caf50;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+        .project-icon {
+            font-size: 18px;
+            margin-right: 8px;
+        }
+
+        .new-session-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        .new-session-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .session-list {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        .session-item {
+            position: relative;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .session-item:hover {
+            background: #e3f2fd;
+            border-left-color: #667eea;
+        }
+        .session-item.active {
+            background: #e3f2fd;
+            border-left-color: #667eea;
+        }
+        .session-item-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .session-item-meta {
+            font-size: 0.85em;
+            color: #666;
+        }
+        .session-item-count {
+            font-size: 0.8em;
+            color: #667eea;
+            margin-top: 4px;
+        }
+
+        /* Session Menu Styles */
+        .session-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .session-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .session-options-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px 8px;
+            color: #666;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .session-options-btn:hover {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .session-menu {
+            position: absolute;
+            right: 10px;
+            top: 40px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 140px;
+            overflow: hidden;
+        }
+
+        .session-menu-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .session-menu-item:hover {
+            background: #f5f5f5;
+        }
+
+        .session-menu-item:not(:last-child) {
+            border-bottom: 1px solid #eee;
+        }
+
+        .session-menu-item.delete {
+            color: #dc3545;
+        }
+
+        .session-menu-item.delete:hover {
+            background: #fff5f5;
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            background: white;
+            border-radius: 0 20px 20px 0;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .back-btn {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .back-btn:hover {
+            background: white;
+            color: #667eea;
+        }
+        .content { padding: 30px; overflow-y: auto; max-height: calc(100vh - 160px); }
+        .section {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .form-group { margin-bottom: 15px; }
+        .date-time {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: flex-start;
+        }
+        .date-time > label {
+            display: inline-block;
+            margin-right: 6px;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+        .date-time > input[type="date"],
+        .date-time > input[type="time"] {
+            width: 120px;
+            padding: 8px 10px;
+        }
+        .date-time > input[type="text"] {
+            flex: 1;
+            min-width: 250px;
+            padding: 8px 10px;
+        }
+        @media (max-width: 420px) {
+            .date-time {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .date-time > input[type="date"],
+            .date-time > input[type="time"] {
+                width: 100%;
+            }
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .radio-group {
+            display: flex;
+            gap: 15px;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: normal;
+        }
+        .button-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #4caf50;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+        .btn-warning:hover {
+            background: #fb8c00;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #e53935;
+            transform: translateY(-2px);
+        }
+        .btn-info {
+            background: #2196f3;
+            color: white;
+        }
+        .btn-info:hover {
+            background: #1e88e5;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background: #9c27b0;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #8e24aa;
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #fff3cd;
+            border-left: 4px solid #ff5722;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .recording-indicator.active { display: flex; }
+        .pulse {
+            width: 12px;
+            height: 12px;
+            background: #f44336;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .timer {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #d32f2f;
+        }
+        .chunk-timer {
+            font-size: 0.9em;
+            color: #666;
+            font-style: italic;
+        }
+        .status-box {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .status-box p { margin: 5px 0; }
+        .result-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .result-title {
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+        .result-meta {
+            font-size: 0.85em;
+            color: #999;
+        }
+        .result-content {
+            line-height: 1.8;
+            color: #333;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        .result-actions {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .mode-info {
+            background: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #2196f3;
+            font-size: 13px;
+            color: #1565c0;
+        }
+        .current-mode-display {
+            background: #4caf50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 14px;
+        }
+        .session-info-banner {
+            background: #4caf50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Session Sidebar -->
+    <div class="sidebar">
+        <h2>Sessions</h2>
+
+        <!-- Mode Toggle Buttons -->
+        <div class="mode-toggle">
+            <button class="mode-btn active" id="personalModeBtn" onclick="switchMode('personal')">
+                👤 Personal
+            </button>
+            <button class="mode-btn" id="projectModeBtn" onclick="switchMode('project')">
+                📁 Project
+            </button>
+        </div>
+
+        <!-- Personal Mode Content -->
+        <div id="personalContent">
+            <button class="new-session-btn" onclick="createNewSession()">+ New Session</button>
+            <div class="session-list" id="sessionList">
+                <p style="color: #999; text-align: center;">Loading sessions...</p>
+            </div>
+        </div>
+
+        <!-- Project Mode Content -->
+        <div id="projectContent" style="display: none;">
+            <div class="project-list">
+                <button class="project-btn" onclick="loadProject('project1')">
+                    <span class="project-icon">📊</span>Project 1
+                </button>
+                <button class="project-btn" onclick="loadProject('project2')">
+                    <span class="project-icon">📈</span>Project 2
+                </button>
+                <button class="project-btn" onclick="loadProject('project3')">
+                    <span class="project-icon">📉</span>Project 3
+                </button>
+                <button class="project-btn" onclick="loadProject('project4')">
+                    <span class="project-icon">📋</span>Project 4
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="goBack()">← Back</button>
+            <h1>📝 Discussion Summary </h1>
+        </div>
+
+        <div class="content">
+            <!-- Session Info Banner -->
+            <div class="session-info-banner" id="sessionBanner" style="display:none;">
+                No session selected - Click "+ New Session" to start
+            </div>
+
+            <!-- Meeting Info -->
+            <div class="section">
+                <h2>📋 Meeting Information</h2>
+                <div class="form-group date-time">
+                    <label for="date">Date:</label>
+                    <input type="date" id="date">
+
+                    <label for="time">Time:</label>
+                    <input type="time" id="time">
+
+                    <label for="venue">Venue:</label>
+                    <input type="text" id="venue" placeholder="Enter meeting venue">
+                </div>
+                <div class="form-group">
+                    <label>Agenda:</label>
+                    <textarea id="agenda" rows="3" placeholder=""></textarea>
+                </div>
+            </div>
+
+            <!-- Processing Mode -->
+            <div class="section">
+                <h2>⚙️ Processing Mode</h2>
+
+                <div class="current-mode-display" id="currentModeDisplay" style="display:none;">
+                    Current Active Mode: Not Started
+                </div>
+                <div class="form-group">
+                    <label>Select Mode:</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="mode" value="Summary" id="modeSummary" checked>
+                            Summary
+                        </label>
+                        <label>
+                            <input type="radio" name="mode" value="Action Points" id="modeActionPoints">
+                            Action Points
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" id="summaryLengthGroup">
+                    <label>Summary Length:</label>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="summaryLength" value="Short" id="lengthShort" checked>
+                            Short
+                        </label>
+                        <label>
+                            <input type="radio" name="summaryLength" value="Medium" id="lengthMedium">
+                            Medium
+                        </label>
+                        <label>
+                            <input type="radio" name="summaryLength" value="Long" id="lengthLong">
+                            Long
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recording Controls -->
+            <div class="section">
+                <h2>🎤 Recording Controls</h2>
+                <div class="recording-indicator" id="recIndicator">
+                    <div class="pulse"></div>
+                    <span>Recording in progress...</span>
+                    <span class="timer" id="timer">00:00:00</span>
+                    <span class="chunk-timer" id="chunkTimer"></span>
+                </div>
+
+                <div class="button-row">
+                    <button class="btn-primary" id="startBtn" onclick="startRec()">Start Meeting</button>
+                    <button class="btn-warning" id="pauseBtn" onclick="pauseRec()" disabled>Pause Meeting</button>
+                    <button class="btn-danger" id="stopBtn" onclick="endMeeting()" disabled>End Meeting</button>
+                </div>
+
+                <div class="button-row">
+                    <button class="btn-info" onclick="uploadFile()">Upload Audio File</button>
+                    <button class="btn-primary" onclick="genGlobalSummary()">Generate Global Summary</button>
+                    <button class="btn-success" onclick="saveResults()">Save Results (.doc)</button>
+                </div>
+
+                <input type="file" id="fileInput" accept=".wav,.webm,.mp3,.m4a,.ogg" style="display:none" onchange="handleFile(event)">
+            </div>
+
+            <!-- Status -->
+            <div class="section" style="display:none;">
+                <h2>📊 Status</h2>
+                <div class="status-box" id="status"></div>
+            </div>
+
+            <!-- Results -->
+            <div class="section" id="resultsSection" style="display:none;">
+                <h2>📄 Results</h2>
+                <div id="results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let isPaused = false;
+        let startTime = null;
+        let timerInterval = null;
+        let chunkTimerInterval = null;
+        let pausedTime = 0;
+        let pauseStartTime = null;
+        let serverUrl = '';
+        let allResults = [];
+
+        // Session management
+        let currentSessionId = null;
+        let currentSessionType = 'personal'; // 'personal' or 'project'
+        let currentProjectId = null; // For project mode
+        let resultOrderCounter = 0;
+        let userSessions = [];
+
+        // Track the last mode type (Summary or Action Points) to detect mode switches
+        let lastModeType = null;
+
+        let currentMimeType = 'audio/webm';
+        let lastChunkTime = null;
+        let autoChunkInterval = null;
+        let audioContext = null;
+        let scriptProcessor = null;
+        let audioInput = null;
+        let bufferData = [];
+        let chunkCounter = 0;
+        let meetingStartTime = null;
+        let mediaStreamRef = null;
+        let isProcessingModeSwitch = false;
+
+        function goBack() {
+            window.location.href = '/';
+        }
+
+        // Switch between Personal and Project mode
+        function switchMode(mode) {
+            currentSessionType = mode;
+
+            // Update button states
+            document.getElementById('personalModeBtn').classList.toggle('active', mode === 'personal');
+            document.getElementById('projectModeBtn').classList.toggle('active', mode === 'project');
+
+            // Show/hide content
+            document.getElementById('personalContent').style.display = mode === 'personal' ? 'block' : 'none';
+            document.getElementById('projectContent').style.display = mode === 'project' ? 'block' : 'none';
+
+            // Clear current session when switching modes
+            clearSession();
+        }
+
+        // Load a project session
+        async function loadProject(projectId) {
+            currentProjectId = projectId;
+            currentSessionType = 'project';
+
+            // Highlight active project button
+            document.querySelectorAll('.project-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.closest('.project-btn').classList.add('active');
+
+            try {
+                const response = await fetch(`/project_session/${projectId}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const session = data.session;
+                    currentSessionId = session.session_id;
+
+                    // Update metadata fields
+                    document.getElementById('date').value = session.meeting_date || '';
+                    document.getElementById('time').value = session.meeting_time || '';
+                    document.getElementById('venue').value = session.venue || '';
+                    document.getElementById('agenda').value = session.agenda || '';
+
+                    // CLEAR and reload results
+                    allResults = [];
+                    resultOrderCounter = 0;
+
+                    const resultsContainer = document.getElementById('results');
+                    resultsContainer.innerHTML = '';
+
+                    if (session.results.length > 0) {
+                        document.getElementById('resultsSection').style.display = 'block';
+                        session.results.forEach((result, index) => {
+                            displayStoredResult(result, index + 1);
+                            allResults.push({
+                                mode: result.mode,
+                                summaryLength: result.summary_length,
+                                result: result.result_text,
+                                timestamp: result.created_at
+                            });
+                        });
+                        resultOrderCounter = session.results.length;
+                    } else {
+                        document.getElementById('resultsSection').style.display = 'none';
+                    }
+
+                    updateSessionBanner(projectId.toUpperCase());
+                    log(`✓ Loaded ${projectId.toUpperCase()}`);
+                } else {
+                    alert('Failed to load project session');
+                }
+            } catch (error) {
+                log('✗ Error loading project: ' + error.message);
+                alert('Error loading project session');
+            }
+        }
+
+        function clearSession() {
+            currentSessionId = null;
+            currentProjectId = null;
+            allResults = [];
+            resultOrderCounter = 0;
+
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('date').value = '';
+            document.getElementById('time').value = '';
+            document.getElementById('venue').value = '';
+            document.getElementById('agenda').value = '';
+            document.getElementById('sessionBanner').style.display = 'none';
+        }
+
+        function updateSessionBanner(sessionName) {
+            const banner = document.getElementById('sessionBanner');
+            banner.textContent = `Active Session: ${sessionName}`;
+            banner.style.display = 'block';
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const today = new Date();
+            document.getElementById('date').valueAsDate = today;
+            document.getElementById('time').value = today.toTimeString().slice(0, 5);
+
+            // Listen to mode changes
+            document.querySelectorAll('input[name="mode"]').forEach(radio => {
+                radio.addEventListener('change', handleModeChange);
+            });
+
+            // Listen to metadata changes
+            document.getElementById('date').addEventListener('change', saveMetadata);
+            document.getElementById('time').addEventListener('change', saveMetadata);
+            document.getElementById('venue').addEventListener('change', saveMetadata);
+            document.getElementById('agenda').addEventListener('change', saveMetadata);
+
+            checkServerSilently();
+            await loadUserSessions();
+        });
+
+        async function loadUserSessions() {
+            try {
+                const response = await fetch('/user_discussion_sessions');
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    userSessions = data.sessions;
+                    renderSessionList();
+
+                    // Auto-select most recent session
+                    if (userSessions.length > 0) {
+                        loadSession(userSessions[0].session_id);
+                    }
+                } else {
+                    log('✗ Failed to load sessions');
+                }
+            } catch (error) {
+                log('✗ Error loading sessions: ' + error.message);
+            }
+        }
+
+        function renderSessionList() {
+            const sessionList = document.getElementById('sessionList');
+
+            if (userSessions.length === 0) {
+                sessionList.innerHTML = '<p style="color: #999; text-align: center;">No sessions yet</p>';
+                return;
+            }
+
+            sessionList.innerHTML = '';
+            userSessions.forEach(session => {
+                const sessionItem = document.createElement('div');
+                sessionItem.className = 'session-item';
+                if (session.session_id === currentSessionId && currentSessionType === 'personal') {
+                    sessionItem.classList.add('active');
+                }
+
+                const name = session.session_name || 'Unnamed Session';
+                const date = session.meeting_date || 'No date';
+                const resultCount = session.result_count || 0;
+
+                sessionItem.innerHTML = `
+                    <div class="session-item-header">
+                        <div class="session-item-content">
+                            <div class="session-item-name">${name}</div>
+                        </div>
+                        <button class="session-options-btn" onclick="toggleSessionMenu('${session.session_id}', event)">
+                            ⋮
+                        </button>
+                    </div>
+                `;
+
+                // Create menu (hidden by default)
+                const menu = document.createElement('div');
+                menu.id = `menu-${session.session_id}`;
+                menu.className = 'session-menu';
+                menu.style.display = 'none';
+                menu.innerHTML = `
+                    <div class="session-menu-item" onclick="renameSession('${session.session_id}', event)">
+                        ✏️ Rename
+                    </div>
+                    <div class="session-menu-item delete" onclick="deleteSession('${session.session_id}', event)">
+                        🗑️ Delete
+                    </div>
+                `;
+                sessionItem.appendChild(menu);
+
+                // Click on session item (not the button) to load it
+                sessionItem.querySelector('.session-item-content').onclick = () => loadSession(session.session_id);
+
+                sessionList.appendChild(sessionItem);
+            });
+        }
+
+        async function createNewSession() {
+            try {
+                const response = await fetch('/create_discussion_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_name: `Discussion - ${new Date().toLocaleString()}`,
+                        session_type: 'personal'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    log('✓ New session created');
+                    await loadUserSessions();
+                    loadSession(data.session_id);
+                } else {
+                    alert('Failed to create session');
+                }
+            } catch (error) {
+                log('✗ Error creating session: ' + error.message);
+                alert('Error creating session');
+            }
+        }
+
+        async function loadSession(sessionId) {
+            try {
+                const response = await fetch(`/discussion_session/${sessionId}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const session = data.session;
+                    currentSessionId = sessionId;
+                    currentSessionType = 'personal';
+                    currentProjectId = null;
+
+                    // Update metadata fields
+                    document.getElementById('date').value = session.meeting_date || '';
+                    document.getElementById('time').value = session.meeting_time || '';
+                    document.getElementById('venue').value = session.venue || '';
+                    document.getElementById('agenda').value = session.agenda || '';
+
+                    // CLEAR and reload results
+                    allResults = [];
+                    resultOrderCounter = 0;
+
+                    const resultsContainer = document.getElementById('results');
+                    resultsContainer.innerHTML = '';
+
+                    if (session.results.length > 0) {
+                        document.getElementById('resultsSection').style.display = 'block';
+                        session.results.forEach((result, index) => {
+                            displayStoredResult(result, index + 1);
+                            allResults.push({
+                                mode: result.mode,
+                                summaryLength: result.summary_length,
+                                result: result.result_text,
+                                timestamp: result.created_at
+                            });
+                        });
+                        resultOrderCounter = session.results.length;
+                    } else {
+                        document.getElementById('resultsSection').style.display = 'none';
+                    }
+
+                    renderSessionList(); // Update active state
+
+                    updateSessionBanner(session.session_name);
+                    log(`✓ Loaded session: ${session.session_name}`);
+                }
+            } catch (error) {
+                log('✗ Error loading session: ' + error.message);
+            }
+        }
+
+        async function saveMetadata() {
+            if (!currentSessionId) return;
+
+            const metadata = {
+                session_id: currentSessionId,
+                meeting_date: document.getElementById('date').value,
+                meeting_time: document.getElementById('time').value,
+                venue: document.getElementById('venue').value,
+                agenda: document.getElementById('agenda').value,
+                session_type: currentSessionType,
+                project_id: currentProjectId
+            };
+
+            try {
+                await fetch('/update_discussion_metadata', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(metadata)
+                });
+            } catch (error) {
+                console.error('Error saving metadata:', error);
+            }
+        }
+
+        function handleModeChange() {
+            const summaryLengthGroup = document.getElementById('summaryLengthGroup');
+            const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+
+            if (selectedMode === 'Action Points') {
+                summaryLengthGroup.style.display = 'none';
+            } else {
+                summaryLengthGroup.style.display = 'block';
+            }
+
+            const currentModeType = selectedMode;
+
+            if (lastModeType !== null && lastModeType !== currentModeType && isRecording && !isPaused) {
+                isProcessingModeSwitch = true;
+                log(`⚠ MODE SWITCH: ${lastModeType} → ${currentModeType}`);
+                log('📦 Processing accumulated audio before mode switch...');
+
+                const audioBlob = new Blob(bufferData, { type: currentMimeType });
+                if (audioBlob.size > 0) {
+                    processAudio(audioBlob, lastModeType);
+                }
+
+                bufferData = [];
+                chunkCounter++;
+                lastChunkTime = Date.now();
+
+                setTimeout(() => {
+                    isProcessingModeSwitch = false;
+                    log(`✓ Mode switched to ${currentModeType}. Recording continues...`);
+                }, 500);
+            }
+
+            lastModeType = currentModeType;
+        }
+
+        async function checkServerSilently() {
+            try {
+                const response = await fetch('/server_health');
+                if (!response.ok) throw new Error('Server not responding');
+            } catch (error) {
+                console.error('Server health check failed:', error);
+            }
+        }
+
+        async function startRec() {
+            if (!currentSessionId) {
+                alert('Please create or select a session first!');
+                return;
+            }
+
+            const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+            lastModeType = selectedMode;
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                mediaStreamRef = stream;
+                const options = { mimeType: currentMimeType };
+                mediaRecorder = new MediaRecorder(stream, options);
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 16000
+                });
+                audioInput = audioContext.createMediaStreamSource(stream);
+                scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                scriptProcessor.onaudioprocess = (e) => {
+                    if (isRecording && !isPaused) {
+                        const inputData = e.inputBuffer.getChannelData(0);
+                        const inputArray = new Float32Array(inputData);
+                        bufferData.push(new Blob([inputArray], { type: currentMimeType }));
+                    }
+                };
+
+                audioInput.connect(scriptProcessor);
+                scriptProcessor.connect(audioContext.destination);
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0 && isRecording && !isPaused) {
+                        audioChunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.start(1000);
+                isRecording = true;
+                isPaused = false;
+                startTime = Date.now();
+                pausedTime = 0;
+                lastChunkTime = Date.now();
+                meetingStartTime = Date.now();
+                chunkCounter = 0;
+                bufferData = [];
+
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('recIndicator').classList.add('active');
+
+                startTimer();
+                startChunkTimer();
+
+                log(`✓ Recording started in ${selectedMode} mode`);
+                updateCurrentModeDisplay(selectedMode);
+
+                autoChunkInterval = setInterval(() => {
+                    if (isRecording && !isPaused && !isProcessingModeSwitch) {
+                        const now = Date.now();
+                        if (now - lastChunkTime >= 30000) {
+                            log('⏰ Auto-processing 30-second chunk...');
+                            const audioBlob = new Blob(bufferData, { type: currentMimeType });
+                            if (audioBlob.size > 0) {
+                                const currentMode = document.querySelector('input[name="mode"]:checked').value;
+                                processAudio(audioBlob, currentMode);
+                            }
+                            bufferData = [];
+                            chunkCounter++;
+                            lastChunkTime = now;
+                        }
+                    }
+                }, 1000);
+
+            } catch (error) {
+                log('✗ Error accessing microphone: ' + error.message);
+                alert('Could not access microphone. Please check permissions.');
+            }
+        }
+
+        function pauseRec() {
+            if (!isRecording || isPaused) return;
+
+            isPaused = true;
+            pauseStartTime = Date.now();
+
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.pause();
+            }
+
+            document.getElementById('pauseBtn').textContent = 'Resume';
+            document.getElementById('recIndicator').style.background = '#d3d3d3';
+            log('⏸ Recording paused');
+        }
+
+        function resumeRec() {
+            if (!isRecording || !isPaused) return;
+
+            isPaused = false;
+            pausedTime += Date.now() - pauseStartTime;
+
+            if (mediaRecorder && mediaRecorder.state === 'paused') {
+                mediaRecorder.resume();
+            }
+
+            document.getElementById('pauseBtn').textContent = 'Pause Meeting';
+            document.getElementById('recIndicator').style.background = '#fff3cd';
+            log('▶ Recording resumed');
+        }
+
+        document.getElementById('pauseBtn').addEventListener('click', function() {
+            if (isPaused) {
+                resumeRec();
+            } else {
+                pauseRec();
+            }
+        });
+
+        async function endMeeting() {
+            if (!isRecording) return;
+
+            log('🛑 Ending meeting and processing final chunk...');
+
+            isRecording = false;
+            isPaused = false;
+
+            if (autoChunkInterval) {
+                clearInterval(autoChunkInterval);
+                autoChunkInterval = null;
+            }
+
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+
+            if (scriptProcessor) {
+                scriptProcessor.disconnect();
+                audioInput.disconnect();
+            }
+
+            if (audioContext) {
+                audioContext.close();
+            }
+
+            if (mediaStreamRef) {
+                mediaStreamRef.getTracks().forEach(track => track.stop());
+            }
+
+            stopTimer();
+            stopChunkTimer();
+
+            const finalBlob = new Blob(bufferData, { type: currentMimeType });
+            if (finalBlob.size > 0) {
+                const currentMode = document.querySelector('input[name="mode"]:checked').value;
+                await processAudio(finalBlob, currentMode);
+            }
+
+            bufferData = [];
+            audioChunks = [];
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('pauseBtn').textContent = 'Pause Meeting';
+            document.getElementById('recIndicator').classList.remove('active');
+
+            log('✓ Meeting ended. All chunks processed.');
+            lastModeType = null;
+        }
+
+        async function processAudio(audioBlob, modeType) {
+            resultOrderCounter++;
+            const resultNumber = resultOrderCounter;
+
+            const selectedMode = modeType || document.querySelector('input[name="mode"]:checked').value;
+            const selectedLength = document.querySelector('input[name="summaryLength"]:checked')?.value || 'Short';
+
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsContainer = document.getElementById('results');
+            resultsSection.style.display = 'block';
+
+            const resultBox = document.createElement('div');
+            resultBox.className = 'result-box';
+            resultBox.id = `result-${resultNumber}`;
+            resultBox.innerHTML = `
+                <div class="result-header">
+                    <div class="result-title">${selectedMode} #${resultNumber}</div>
+                    <div class="result-meta">Processing...</div>
+                </div>
+                <div class="result-content">⏳ Processing audio...</div>
+            `;
+            resultsContainer.insertBefore(resultBox, resultsContainer.firstChild);
+
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'chunk.webm');
+            formData.append('mode', selectedMode);
+            formData.append('summary_length', selectedLength);
+            formData.append('session_id', currentSessionId);
+            formData.append('result_order', resultNumber);
+            formData.append('session_type', currentSessionType);
+            if (currentProjectId) {
+                formData.append('project_id', currentProjectId);
+            }
+
+            try {
+                log(`📤 Uploading ${selectedMode} chunk #${resultNumber}...`);
+                const response = await fetch('/process_audio', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'processing') {
+                    const jobId = data.job_id;
+                    log(`✓ Job created: ${jobId}`);
+                    pollJobStatus(jobId, resultNumber, selectedMode, selectedLength);
+                } else {
+                    throw new Error(data.detail || 'Unknown error');
+                }
+            } catch (error) {
+                log('✗ Error: ' + error.message);
+                updateResultBox(resultNumber, `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function pollJobStatus(jobId, resultNumber, mode, summaryLength) {
+            const pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/job_status/${jobId}`);
+                    const data = await response.json();
+
+                    if (data.status === 'completed') {
+                        clearInterval(pollInterval);
+                        const result = data.result;
+                        updateResultBox(resultNumber, result, 'success', mode, summaryLength);
+                        log(`✓ ${mode} #${resultNumber} completed`);
+
+                        allResults.push({
+                            mode: mode,
+                            summaryLength: summaryLength,
+                            result: result,
+                            timestamp: new Date().toISOString()
+                        });
+                    } else if (data.status === 'failed') {
+                        clearInterval(pollInterval);
+                        updateResultBox(resultNumber, `Error: ${data.error}`, 'error');
+                        log(`✗ ${mode} #${resultNumber} failed`);
+                    }
+                } catch (error) {
+                    clearInterval(pollInterval);
+                    updateResultBox(resultNumber, `Error: ${error.message}`, 'error');
+                }
+            }, 2000);
+        }
+
+        function updateResultBox(resultNumber, content, status, mode, summaryLength) {
+            const resultBox = document.getElementById(`result-${resultNumber}`);
+            if (!resultBox) return;
+
+            const timestamp = new Date().toLocaleString();
+            const title = mode ? `${mode} #${resultNumber}` : `Result #${resultNumber}`;
+            const lengthInfo = summaryLength && mode === 'Summary' ? ` (${summaryLength})` : '';
+
+            resultBox.innerHTML = `
+                <div class="result-header">
+                    <div class="result-title">${title}${lengthInfo}</div>
+                    <div class="result-meta">${timestamp}</div>
+                </div>
+                <div class="result-content">${content}</div>
+            `;
+        }
+
+        function displayStoredResult(result, index) {
+            const resultsContainer = document.getElementById('results');
+            const resultBox = document.createElement('div');
+            resultBox.className = 'result-box';
+            resultBox.id = `result-${index}`;
+
+            const timestamp = new Date(result.created_at).toLocaleString();
+            const lengthInfo = result.summary_length && result.mode === 'Summary' ? ` (${result.summary_length})` : '';
+
+            resultBox.innerHTML = `
+                <div class="result-header">
+                    <div class="result-title">${result.mode} #${index}${lengthInfo}</div>
+                    <div class="result-meta">${timestamp}</div>
+                </div>
+                <div class="result-content">${result.result_text}</div>
+            `;
+
+            resultsContainer.appendChild(resultBox);
+        }
+
+        function uploadFile() {
+            document.getElementById('fileInput').click();
+        }
+
+        async function handleFile(event) {
+            if (!currentSessionId) {
+                alert('Please create or select a session first!');
+                return;
+            }
+
+            const file = event.target.files[0];
+            if (!file) return;
+
+            log(`📁 Processing file: ${file.name}`);
+
+            resultOrderCounter++;
+            const resultNumber = resultOrderCounter;
+
+            const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+            const selectedLength = document.querySelector('input[name="summaryLength"]:checked')?.value || 'Short';
+
+            const resultsSection = document.getElementById('resultsSection');
+            const resultsContainer = document.getElementById('results');
+            resultsSection.style.display = 'block';
+
+            const resultBox = document.createElement('div');
+            resultBox.className = 'result-box';
+            resultBox.id = `result-${resultNumber}`;
+            resultBox.innerHTML = `
+                <div class="result-header">
+                    <div class="result-title">${selectedMode} #${resultNumber}</div>
+                    <div class="result-meta">Processing ${file.name}...</div>
+                </div>
+                <div class="result-content">⏳ Processing audio file...</div>
+            `;
+            resultsContainer.insertBefore(resultBox, resultsContainer.firstChild);
+
+            const formData = new FormData();
+            formData.append('audio', file);
+            formData.append('mode', selectedMode);
+            formData.append('summary_length', selectedLength);
+            formData.append('session_id', currentSessionId);
+            formData.append('result_order', resultNumber);
+            formData.append('session_type', currentSessionType);
+            if (currentProjectId) {
+                formData.append('project_id', currentProjectId);
+            }
+
+            try {
+                const response = await fetch('/process_audio', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'processing') {
+                    const jobId = data.job_id;
+                    log(`✓ File uploaded, job created: ${jobId}`);
+                    pollJobStatus(jobId, resultNumber, selectedMode, selectedLength);
+                } else {
+                    throw new Error(data.detail || 'Unknown error');
+                }
+            } catch (error) {
+                log('✗ Error uploading file: ' + error.message);
+                updateResultBox(resultNumber, `Error: ${error.message}`, 'error');
+            }
+
+            event.target.value = '';
+        }
+
+        async function genGlobalSummary() {
+            if (allResults.length === 0) {
+                alert('No results available to summarize. Please process some audio first.');
+                return;
+            }
+
+            if (!currentSessionId) {
+                alert('Please create or select a session first!');
+                return;
+            }
+
+            log('📊 Generating global summary...');
+
+            const texts = allResults.map(r => r.result);
+
+            try {
+                const response = await fetch('/global_summary', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        texts: texts,
+                        session_id: currentSessionId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    resultOrderCounter++;
+                    const resultNumber = resultOrderCounter;
+
+                    const resultsContainer = document.getElementById('results');
+                    const resultBox = document.createElement('div');
+                    resultBox.className = 'result-box';
+                    resultBox.style.borderLeft = '4px solid #9c27b0';
+                    resultBox.id = `result-${resultNumber}`;
+
+                    const timestamp = new Date().toLocaleString();
+
+                    resultBox.innerHTML = `
+                        <div class="result-header">
+                            <div class="result-title">🌐 Global Summary</div>
+                            <div class="result-meta">${timestamp}</div>
+                        </div>
+                        <div class="result-content">${data.summary}</div>
+                    `;
+
+                    resultsContainer.insertBefore(resultBox, resultsContainer.firstChild);
+
+                    allResults.push({
+                        mode: 'Global Summary',
+                        summaryLength: '',
+                        result: data.summary,
+                        timestamp: new Date().toISOString()
+                    });
+
+                    log('✓ Global summary generated');
+                } else {
+                    alert('Failed to generate global summary');
+                }
+            } catch (error) {
+                log('✗ Error generating global summary: ' + error.message);
+                alert('Error generating global summary');
+            }
+        }
+
+        function updateCurrentModeDisplay(mode) {
+            const display = document.getElementById('currentModeDisplay');
+            display.textContent = `Current Active Mode: ${mode}`;
+            display.style.display = 'block';
+        }
+
+        function startChunkTimer() {
+            let chunkSeconds = 0;
+            chunkTimerInterval = setInterval(() => {
+                if (!isPaused && isRecording) {
+                    chunkSeconds++;
+                    const timeUntilNext = 30 - (chunkSeconds % 30);
+                    document.getElementById('chunkTimer').textContent =
+                        `Next auto-chunk in ${timeUntilNext}s`;
+                }
+            }, 1000);
+        }
+
+        function stopChunkTimer() {
+            if (chunkTimerInterval) {
+                clearInterval(chunkTimerInterval);
+                chunkTimerInterval = null;
+                document.getElementById('chunkTimer').textContent = '';
+            }
+        }
+
+        async function saveResults() {
+            if (allResults.length === 0) {
+                alert('No results to save!');
+                return;
+            }
+
+            try {
+                const meetingDate = document.getElementById('date').value || 'Not specified';
+                const meetingTime = document.getElementById('time').value || 'Not specified';
+                const venue = document.getElementById('venue').value || 'Not specified';
+                const agenda = document.getElementById('agenda').value || 'Not specified';
+
+                let htmlContent = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                line-height: 1.6;
+                                margin: 40px;
+                            }
+                            .header {
+                                text-align: center;
+                                margin-bottom: 30px;
+                                border-bottom: 3px solid #667eea;
+                                padding-bottom: 20px;
+                            }
+                            .header h1 {
+                                color: #667eea;
+                                margin-bottom: 10px;
+                            }
+                            .meeting-info {
+                                background: #f0f0f0;
+                                padding: 15px;
+                                margin-bottom: 20px;
+                                border-left: 4px solid #667eea;
+                            }
+                            .meeting-info p {
+                                margin: 5px 0;
+                            }
+                            .result-section {
+                                margin-bottom: 25px;
+                                page-break-inside: avoid;
+                            }
+                            .result-header {
+                                background: #667eea;
+                                color: white;
+                                padding: 10px 15px;
+                                font-weight: bold;
+                                margin-bottom: 10px;
+                            }
+                            .result-content {
+                                padding: 15px;
+                                border: 1px solid #ddd;
+                                white-space: pre-wrap;
+                            }
+                            .footer {
+                                margin-top: 40px;
+                                padding-top: 20px;
+                                border-top: 2px solid #667eea;
+                                text-align: center;
+                                color: #666;
+                                font-size: 12px;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h1>Discussion Summary Report</h1>
+                        </div>
+
+                        <div class="meeting-info">
+                            <p><strong>Date:</strong> ${meetingDate}</p>
+                            <p><strong>Time:</strong> ${meetingTime}</p>
+                            <p><strong>Venue:</strong> ${venue}</p>
+                            <p><strong>Agenda:</strong> ${agenda}</p>
+                        </div>
+                `;
+
+                allResults.forEach((result, index) => {
+                    const lengthInfo = result.summaryLength && result.mode === 'Summary'
+                        ? ` (${result.summaryLength})`
+                        : '';
+
+                    htmlContent += `
+                        <div class="result-section">
+                            <div class="result-header">
+                                ${result.mode} #${index + 1}${lengthInfo}
+                            </div>
+                            <div class="result-content">${result.result}</div>
+                        </div>
+                    `;
+                });
+
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                htmlContent += `
+                        <div class="footer">
+                            <p>Generated on: ${new Date().toLocaleString()}</p>
+                            <p>Document: Discussion_Summary_${timestamp}.doc</p>
+                            <p>Prepared by <strong>Directorate of Embedded AI Systems Team</strong></p>
+                        </div>
+                    </body>
+                    </html>
+                `;
+
+                const blob = new Blob(['\ufeff', htmlContent], {
+                    type: 'application/msword'
+                });
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Discussion_Summary_${timestamp}.doc`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                log(`✔ Results saved: Discussion_Summary_${timestamp}.doc`);
+                alert('Results saved successfully as Word document!');
+
+            } catch (error) {
+                log('✗ Error saving results: ' + error.message);
+                alert('Error saving results: ' + error.message);
+            }
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    const elapsed = Math.floor((Date.now() - startTime - pausedTime) / 1000);
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const seconds = elapsed % 60;
+
+                    document.getElementById('timer').textContent =
+                        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function log(message) {
+            const statusBox = document.getElementById('status');
+            const p = document.createElement('p');
+            const timestamp = new Date().toLocaleTimeString();
+            p.textContent = `[${timestamp}] ${message}`;
+            statusBox.appendChild(p);
+            statusBox.scrollTop = statusBox.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function encodeWAV(samples, inputSampleRate, outputSampleRate) {
+            let resampledData;
+            if (inputSampleRate !== outputSampleRate) {
+                const ratio = inputSampleRate / outputSampleRate;
+                const newLength = Math.round(samples.length / ratio);
+                resampledData = new Float32Array(newLength);
+
+                for (let i = 0; i < newLength; i++) {
+                    const srcIndex = i * ratio;
+                    const srcIndexFloor = Math.floor(srcIndex);
+                    const srcIndexCeil = Math.min(srcIndexFloor + 1, samples.length - 1);
+                    const t = srcIndex - srcIndexFloor;
+                    resampledData[i] = samples[srcIndexFloor] * (1 - t) + samples[srcIndexCeil] * t;
+                }
+            } else {
+                resampledData = samples;
+            }
+
+            const buffer = new ArrayBuffer(44 + resampledData.length * 2);
+            const view = new DataView(buffer);
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + resampledData.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, outputSampleRate, true);
+            view.setUint32(28, outputSampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, resampledData.length * 2, true);
+
+            floatTo16BitPCM(view, 44, resampledData);
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        function floatTo16BitPCM(view, offset, input) {
+            for (let i = 0; i < input.length; i++, offset += 2) {
+                const s = Math.max(-1, Math.min(1, input[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+        }
+
+        // Close all menus when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.session-options-btn')) {
+                document.querySelectorAll('.session-menu').forEach(m => m.style.display = 'none');
+            }
+        });
+
+        function toggleSessionMenu(sessionId, event) {
+            event.stopPropagation();
+            const menu = document.getElementById(`menu-${sessionId}`);
+
+            // Close all other menus first
+            document.querySelectorAll('.session-menu').forEach(m => {
+                if (m.id !== `menu-${sessionId}`) {
+                    m.style.display = 'none';
+                }
+            });
+
+            // Toggle this menu
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function renameSession(sessionId, event) {
+            event.stopPropagation();
+
+            // Close menu
+            document.getElementById(`menu-${sessionId}`).style.display = 'none';
+
+            // Get current name
+            const session = userSessions.find(s => s.session_id === sessionId);
+            const currentName = session ? session.session_name : '';
+
+            const newName = prompt('Enter new session name:', currentName);
+
+            if (!newName || !newName.trim() || newName.trim() === currentName) {
+                return; // Cancelled or no change
+            }
+
+            try {
+                const response = await fetch('/rename_discussion_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        new_name: newName.trim()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    log('✓ Session renamed successfully');
+                    await loadUserSessions();
+
+                    // Update banner if this is the active session
+                    if (currentSessionId === sessionId) {
+                        updateSessionBanner(newName.trim());
+                    }
+                } else {
+                    alert('Failed to rename session');
+                }
+            } catch (error) {
+                log('✗ Error renaming session: ' + error.message);
+                alert('Error renaming session');
+            }
+        }
+
+        async function deleteSession(sessionId, event) {
+            event.stopPropagation();
+
+            // Close menu
+            document.getElementById(`menu-${sessionId}`).style.display = 'none';
+
+            const session = userSessions.find(s => s.session_id === sessionId);
+            const sessionName = session ? session.session_name : 'this session';
+
+            if (!confirm(`Are you sure you want to delete "${sessionName}"?\n\nAll results will be permanently deleted.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/delete_discussion_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    log('✓ Session deleted successfully');
+
+                    // If deleted session was active, clear the UI
+                    if (currentSessionId === sessionId) {
+                        clearSession();
+                    }
+
+                    // Reload sessions list
+                    await loadUserSessions();
+
+                } else {
+                    alert('Failed to delete session');
+                }
+            } catch (error) {
+                log('✗ Error deleting session: ' + error.message);
+                alert('Error deleting session');
+            }
+        }
+
+    </script>
+</body>
+</html>
